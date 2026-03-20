@@ -266,7 +266,7 @@ async function saveConfigs() {
             ).flat()
         ];
 
-        await configChar.writeValue(new TextEncoder().encode(csv.join(",")));
+        await configChar.writeValueWithResponse(new TextEncoder().encode(csv.join(",")));
         btn.textContent = "✓ Saved!";
     } catch (err) {
         console.error(err);
