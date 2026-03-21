@@ -45,7 +45,7 @@ To conserve battery and ensure security during gameplay, Bluetooth is disabled b
 3. The LED will begin to blink, indicating the FCU is broadcasting under the name `PaPyPer_FCU`.
 
 ### 2. Connecting to the Web Dashboard
-1. Open the `index.html` file (or host it locally/online) using a browser that supports the **Web Bluetooth API** (e.g., Google Chrome, Microsoft Edge, Opera). *Note: Safari currently does not support this feature.*
+1. Open the `ble_configs.html` file (or host it locally/online) using a browser that supports the **Web Bluetooth API** (e.g., Google Chrome, Microsoft Edge, Opera). *Note: Safari currently does not support this feature.*
 2. Click the **Connect** button.
 3. Select `PaPyPer_FCU` from the browser's device pairing popup.
 4. Once connected, the live Trigger/Selector status will display, and you can begin modifying your profiles.
@@ -66,7 +66,7 @@ Each profile allows you to fine-tune the following parameters (all time values a
   * Set `3` = 3-round burst
   * Set `-1` = Full Auto.
 * **Rounds Per Release:** The number of rounds fired when the trigger is released (Used for Binary trigger setups).
-* **Rounds Per Second (RPS):** The maximum rate of fire in Full Auto, acting as a cycle time limiter.
+* **Rounds Per Second (RPS):** The global cycle time limiter. It dictates the maximum rate of fire for Full-Auto and Burst modes. In Semi-Auto, it acts as a forced delay between individual shots, effectively capping how fast the trigger can be spammed. *(Note: Binary trigger release shots deliberately bypass this delay for immediate response).*
 
 After adjusting your values, click **Save Configuration**. The parameters are sent instantly via BLE and saved to the ESP32's flash memory.
 
