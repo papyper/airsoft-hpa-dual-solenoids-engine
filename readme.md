@@ -4,6 +4,8 @@ PaPyPer HPA FCU is an open-source Fire Control Unit designed for HPA (High Press
 
 This project features wireless configuration via **Bluetooth Low Energy (BLE)** directly through a web browser (Web Bluetooth API), completely eliminating the need for physical LCD screens or third-party mobile apps.
 
+![BLE Configs UI](images/ble_configs.png)
+
 ---
 
 ## 🌟 Key Features
