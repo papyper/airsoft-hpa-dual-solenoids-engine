@@ -41,9 +41,17 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
         std::string rawValue = pCharacteristic->getValue();
         if (rawValue.length() > 0) {
             String value = String(rawValue.c_str());
-            Serial.print("BLE Save Value: ");
+            Serial.print("BLE Received: ");
             Serial.println(value);
 
+            // Intercept Hall Sensor Calibration command
+            if (value.startsWith("CAL,")) {
+                int stateToCalibrate = value.substring(4).toInt();
+                startCalibration(stateToCalibrate); // Thay đổi ở đây
+                return; // Stop here, do not proceed to saving profiles
+            }
+
+            // Normal Profile Saving
             prefs.begin(PREF_NAME, false);
             
             modeSlot[0] = getValue(value, ',', 0).toInt();
@@ -56,16 +64,16 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
                 String p = "p" + String(i);
                 
                 // Solenoid 1
-                prefs.putUInt((p+"s1").c_str(), getValue(value, ',', vIdx++).toInt()); // sol1_open
-                prefs.putUInt((p+"p1").c_str(), getValue(value, ',', vIdx++).toInt()); // sol1_peak
-                prefs.putInt((p+"h1").c_str(), getValue(value, ',', vIdx++).toInt());  // sol1_hold_pwm
-                prefs.putUInt((p+"d1").c_str(), getValue(value, ',', vIdx++).toInt()); // after_sol1
+                prefs.putUInt((p+"s1").c_str(), getValue(value, ',', vIdx++).toInt()); 
+                prefs.putUInt((p+"p1").c_str(), getValue(value, ',', vIdx++).toInt()); 
+                prefs.putInt((p+"h1").c_str(), getValue(value, ',', vIdx++).toInt());  
+                prefs.putUInt((p+"d1").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 
                 // Solenoid 2
-                prefs.putUInt((p+"s2").c_str(), getValue(value, ',', vIdx++).toInt()); // sol2_open
-                prefs.putUInt((p+"p2").c_str(), getValue(value, ',', vIdx++).toInt()); // sol2_peak
-                prefs.putInt((p+"h2").c_str(), getValue(value, ',', vIdx++).toInt());  // sol2_hold_pwm
-                prefs.putUInt((p+"d2").c_str(), getValue(value, ',', vIdx++).toInt()); // after_sol2
+                prefs.putUInt((p+"s2").c_str(), getValue(value, ',', vIdx++).toInt()); 
+                prefs.putUInt((p+"p2").c_str(), getValue(value, ',', vIdx++).toInt()); 
+                prefs.putInt((p+"h2").c_str(), getValue(value, ',', vIdx++).toInt());  
+                prefs.putUInt((p+"d2").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 
                 // Firing Mode
                 prefs.putInt((p+"rpt").c_str(), getValue(value, ',', vIdx++).toInt());
@@ -82,14 +90,11 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
 class ServerCallbacks: public NimBLEServerCallbacks {
   void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
       deviceConnected = true;
-      Serial.print("BLE Client Address: ");
-      Serial.println(connInfo.getAddress().toString().c_str());
+      Serial.print("BLE Client Connected.");
   };
 
   void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
     deviceConnected = false;
-    Serial.print("BLE Disconnected! Reason code: ");
-    Serial.println(reason);
     NimBLEDevice::startAdvertising(); 
   }
 };
@@ -97,7 +102,6 @@ class ServerCallbacks: public NimBLEServerCallbacks {
 void startBLE() {
   NimBLEDevice::init(BLE_NAME);
   NimBLEDevice::setMTU(512);
-  
   NimBLEDevice::setPower(ESP_PWR_LVL_P9); 
 
   pServer = NimBLEDevice::createServer();
@@ -124,13 +128,11 @@ void startBLE() {
   pService->start();
 
   NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
-  
   pAdvertising->setName(BLE_NAME);
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->start(); 
   
   configActive = true; 
-  Serial.println("BLE Started.");
 }
 
 void stopBLE() {
@@ -167,8 +169,7 @@ void sendLiveStatesBLE() {
 
       pStateCharacteristic->setValue((uint8_t*)stateStr.c_str(), stateStr.length());
       pStateCharacteristic->notify();
-      Serial.println("BLE Notify: " + stateStr);
   }
-}
+} 
 
 #endif

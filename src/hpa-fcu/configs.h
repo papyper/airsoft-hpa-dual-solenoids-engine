@@ -10,8 +10,8 @@ const int TRIGGER_PIN = D7;
 const int MODE_PIN = D6;
 const int SAFE_PIN = D5;
 const int LED_PIN = D4;
-const int TRIGGER_HALL_PIN = D2;
-const int SELECTOR_HALL_PIN = D3;
+const int TRIGGER_HALL_PIN = D1;
+const int SELECTOR_HALL_PIN = D2;
 
 // ===== CONFIGURATION MODE TOGGLE =====
 const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds
@@ -19,6 +19,11 @@ const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds
 // ===== PWM CONFIGURATION (ESP32 Core v3.x.x API) =====
 #define PWM_FREQ 20000 // 20kHz
 #define PWM_RES 8      // res 8-bit (0 - 255)
+
+// ===== SELECTOR CONFIGURATION =====
+// Set to true to use Hall sensor, false for traditional physical switches
+#define USE_HALL_SELECTOR true
+#define SELECTOR_POLL_MS 50 //50ms, 20 selector read per second
 
 // ===== FIRING CONFIGURATION =====
 #define PROFILE_COUNT 5

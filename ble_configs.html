@@ -176,6 +176,18 @@
     </div>
 
     <div id="config-form">
+        
+        <div class="card" style="margin-bottom:12px">
+            <div class="card-title">Selector Calibration (Hall Sensor)</div>
+            <p style="font-size:11px; color:var(--text-muted); margin-bottom:10px; font-family: var(--font-mono);">
+                Move your physical selector to the desired position, then press the corresponding button below.
+            </p>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-ghost" style="flex:1" onclick="sendCalibrate(event, 0)">Safe</button>
+                <button class="btn btn-ghost" style="flex:1" onclick="sendCalibrate(event, 1)">Mode 1</button>
+                <button class="btn btn-ghost" style="flex:1" onclick="sendCalibrate(event, 2)">Mode 2</button>
+            </div>
+        </div>
 
         <div class="card">
             <div class="card-title">Fire Mode</div>
@@ -414,6 +426,30 @@ async function connectBLE() {
         console.error(err);
         setStatus("Connection failed. See console.", "");
     }
+}
+
+// ─── BLE Calibrate Hall ──────────────────────────────────────────────────────
+async function sendCalibrate(event, stateIndex) {
+    if (!configChar) return alert("Connect BLE first!");
+    
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = "Hold...";
+    btn.disabled = true;
+
+    try {
+        const cmd = "CAL," + stateIndex;
+        await configChar.writeValueWithResponse(new TextEncoder().encode(cmd));
+        btn.textContent = "✓ Set";
+    } catch(e) {
+        console.error(e);
+        btn.textContent = "Error";
+    }
+    
+    setTimeout(() => { 
+        btn.textContent = originalText; 
+        btn.disabled = false; 
+    }, 1500);
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────

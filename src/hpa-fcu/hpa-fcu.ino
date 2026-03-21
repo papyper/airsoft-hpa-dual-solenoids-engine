@@ -8,13 +8,11 @@ bool configToggleDone = false;
 Preferences prefs;
 
 struct FireMode {
-  // Solenoid 1
   uint32_t sol1_open;
   uint32_t sol1_peak;     
   int      sol1_hold_pwm; 
   uint32_t after_sol1;
 
-  // Solenoid 2
   uint32_t sol2_open;
   uint32_t sol2_peak;     
   int      sol2_hold_pwm; 
@@ -24,7 +22,6 @@ struct FireMode {
   int round_per_trigger_release;
   int round_per_second;
 
-  // Pre-calculated times
   uint32_t t_sol1_peak_end; 
   uint32_t t_sol1_off;
   uint32_t t_sol2_on;
@@ -39,13 +36,8 @@ int modeSlot[2] = {0, 1};
 
 // ===== STATE MACHINE =====
 enum FCUState { 
-  S_IDLE, 
-  S_SOL1_PEAK, 
-  S_SOL1_HOLD, 
-  S_WAIT_SOL2, 
-  S_SOL2_PEAK, 
-  S_SOL2_HOLD, 
-  S_WAIT_CYCLE_END 
+  S_IDLE, S_SOL1_PEAK, S_SOL1_HOLD, S_WAIT_SOL2, 
+  S_SOL2_PEAK, S_SOL2_HOLD, S_WAIT_CYCLE_END 
 };
 FCUState fcuState = S_IDLE;
 
@@ -67,8 +59,32 @@ bool pendingReleaseFire = false;
 uint32_t lastDebounce = 0;
 const uint32_t debounceDelay = 3000;
 
-// ===== SELECTOR =====
+// ===== SELECTOR (HALL & SWITCH) =====
 int selectorState = -1; // -1: safe, 0: mode 0, 1: mode 1
+
+// Hall Sensor Calibration Ranges
+int safeMin = 4095, safeMax = 0;
+int mode1Min = 4095, mode1Max = 0;
+int mode2Min = 4095, mode2Max = 0;
+
+// Moving average buffer (Cho lúc xài bình thường)
+const int numReadings = 16; 
+int readings[numReadings];
+int readIndex = 0;
+long totalReadings = 0;
+int averageHall = 0;
+
+// ===== CALIBRATION VARIABLES (VOLATILE CHO ĐA NHÂN CPU ESP32) =====
+volatile int calibState = -1;
+volatile uint32_t calibStartTime = 0;
+volatile uint32_t calibWindowStartTime = 0;
+volatile int currentWindowMin = 4095;
+volatile int currentWindowMax = 0;
+volatile long sumOfMins = 0;
+volatile long sumOfMaxes = 0;
+volatile int windowCount = 0;
+const uint32_t CALIB_DURATION = 5000; // Tổng thời gian đo 2 giây
+const uint32_t CALIB_WINDOW = 100;    // Băm nhỏ thành các khung 100ms
 
 // ===== LED TIMERS =====
 uint32_t ledTimer = 0;
@@ -76,12 +92,10 @@ uint32_t ledPauseTimer = 0;
 int ledBlinkCount = 0;
 bool logicalLedState = false;
 
-
 // ================= PRE-CALCULATOR =================
 void precalcProfile(FireMode& m) {
   uint32_t t = 0;
   
-  // Solenoid 1
   uint32_t actual_sol1_peak = (m.sol1_peak > m.sol1_open) ? m.sol1_open : m.sol1_peak;
   m.t_sol1_peak_end = t + actual_sol1_peak;
   t += m.sol1_open;
@@ -90,7 +104,6 @@ void precalcProfile(FireMode& m) {
   t += m.after_sol1;
   m.t_sol2_on = t;
 
-  // Solenoid 2
   uint32_t actual_sol2_peak = (m.sol2_peak > m.sol2_open) ? m.sol2_open : m.sol2_peak;
   m.t_sol2_peak_end = t + actual_sol2_peak;
   t += m.sol2_open;
@@ -104,6 +117,158 @@ void precalcProfile(FireMode& m) {
     if (target > t) t = target;
   }
   m.t_cycle_end = t;
+}
+
+// ================= OVERLAP RESOLUTION =================
+void resolveOverlaps() {
+  struct Range { int* minP; int* maxP; int center; const char* name; };
+  Range ranges[3] = {
+    {&safeMin, &safeMax, (safeMin + safeMax) / 2, "Safe"},
+    {&mode1Min, &mode1Max, (mode1Min + mode1Max) / 2, "Mode1"},
+    {&mode2Min, &mode2Max, (mode2Min + mode2Max) / 2, "Mode2"}
+  };
+
+  bool isOverlapped = false;
+
+  for(int i = 0; i < 2; i++) {
+    for(int j = i + 1; j < 3; j++) {
+      if(ranges[i].center > ranges[j].center) {
+        Range temp = ranges[i];
+        ranges[i] = ranges[j];
+        ranges[j] = temp;
+      }
+    }
+  }
+
+  for(int i = 0; i < 2; i++) {
+    if(*(ranges[i].maxP) >= *(ranges[i+1].minP)) {
+      isOverlapped = true;
+      int midPoint = (*(ranges[i].maxP) + *(ranges[i+1].minP)) / 2;
+      *(ranges[i].maxP) = midPoint - 1;
+      *(ranges[i+1].minP) = midPoint + 1;
+    }
+  }
+
+  if (isOverlapped) {
+    prefs.begin(PREF_NAME, false);
+    prefs.putInt("hs_min", safeMin); prefs.putInt("hs_max", safeMax);
+    prefs.putInt("hm1_min", mode1Min); prefs.putInt("hm1_max", mode1Max);
+    prefs.putInt("hm2_min", mode2Min); prefs.putInt("hm2_max", mode2Max);
+    prefs.end();
+  }
+}
+
+// ================= HÀM HỖ TRỢ ĐO (CALIBRATION) =================
+void startCalibration(int stateIndex) {
+  if (calibState != -1) return; 
+  
+  // Phải khởi tạo các biến tính toán TRƯỚC TIÊN
+  calibStartTime = millis();
+  calibWindowStartTime = millis();
+  currentWindowMin = 4095;
+  currentWindowMax = 0;
+  sumOfMins = 0;
+  sumOfMaxes = 0;
+  windowCount = 0;
+  
+  Serial.printf("Starting async calibration for state %d...\n", stateIndex);
+  
+  // Bật cờ state SAU CÙNG để báo hiệu cho Core 1 nhảy vào xử lý an toàn
+  calibState = stateIndex; 
+}
+
+void handleCalibration() {
+  static uint32_t lastCalibRead = 0;
+  if (millis() - lastCalibRead < 1) return; // Quét nhanh 1ms/lần
+  lastCalibRead = millis();
+
+  int rawHall = analogRead(SELECTOR_HALL_PIN);
+
+  // Cập nhật đỉnh và đáy trong khung 100ms hiện tại
+  if (rawHall < currentWindowMin) currentWindowMin = rawHall;
+  if (rawHall > currentWindowMax) currentWindowMax = rawHall;
+
+  // Trôi qua 100ms -> Chốt sổ đem Min/Max cộng vào Tổng
+  if (millis() - calibWindowStartTime >= CALIB_WINDOW) {
+    sumOfMins += currentWindowMin;
+    sumOfMaxes += currentWindowMax;
+    windowCount++;
+    
+    // Reset lại để đo khung tiếp theo
+    calibWindowStartTime = millis();
+    currentWindowMin = 4095;
+    currentWindowMax = 0;
+  }
+
+  // Chạy đủ 2 giây -> Tính trung bình cộng của tất cả các Min/Max
+  if (millis() - calibStartTime >= CALIB_DURATION) {
+    int finalMin, finalMax;
+
+    if (windowCount == 0) {
+      // Phao cứu sinh: Nếu CPU quá tải làm lỡ nhịp đếm window, vẫn lấy được mẫu cuối
+      finalMin = currentWindowMin;
+      finalMax = currentWindowMax;
+    } else {
+      finalMin = sumOfMins / windowCount;
+      finalMax = sumOfMaxes / windowCount;
+    }
+
+    // Nới lỏng dung sai an toàn (+-2)
+    finalMin -= 2; if(finalMin < 0) finalMin = 0;
+    finalMax += 2; if(finalMax > 4095) finalMax = 4095;
+
+    // Lưu bộ nhớ
+    prefs.begin(PREF_NAME, false);
+    if (calibState == 0) {
+      safeMin = finalMin; safeMax = finalMax;
+      prefs.putInt("hs_min", finalMin); prefs.putInt("hs_max", finalMax);
+    } else if (calibState == 1) {
+      mode1Min = finalMin; mode1Max = finalMax;
+      prefs.putInt("hm1_min", finalMin); prefs.putInt("hm1_max", finalMax);
+    } else if (calibState == 2) {
+      mode2Min = finalMin; mode2Max = finalMax;
+      prefs.putInt("hm2_min", finalMin); prefs.putInt("hm2_max", finalMax);
+    }
+    prefs.end();
+    
+    Serial.printf("Calibrated state %d -> Avg Min: %d | Avg Max: %d\n", calibState, finalMin, finalMax);
+    
+    // Đóng cờ đo đạc
+    calibState = -1; 
+    resolveOverlaps();
+  }
+}
+
+// ================= HÀM HỖ TRỢ XÀI (NORMAL OPERATION) =================
+void handleSelectorNormal() {
+  static uint32_t lastHallRead = 0;
+  
+  // Hãm tốc độ để tiết kiệm pin theo cấu hình
+  if (millis() - lastHallRead >= SELECTOR_POLL_MS) {
+    lastHallRead = millis();
+    
+    // Đọc ADC mượt (Lọc trung bình động)
+    totalReadings -= readings[readIndex];
+    readings[readIndex] = analogRead(SELECTOR_HALL_PIN);
+    totalReadings += readings[readIndex];
+    readIndex = (readIndex + 1) % numReadings;
+    averageHall = totalReadings / numReadings;
+
+    // Quét xem đang lọt vào dải nhận diện nào
+    int currentZone = -2; 
+    if (averageHall >= safeMin && averageHall <= safeMax) {
+      currentZone = -1;
+    } else if (averageHall >= mode1Min && averageHall <= mode1Max) {
+      currentZone = 0;
+    } else if (averageHall >= mode2Min && averageHall <= mode2Max) {
+      currentZone = 1;
+    }
+
+    // Chốt sổ mode hiện tại (Nhạy ngay lập tức)
+    if (currentZone != -2) {
+      selectorState = currentZone;
+    }
+  }
 }
 
 // ================= CONFIGURATION =================
@@ -129,11 +294,51 @@ void loadConfig() {
   }
   modeSlot[0] = prefs.getInt("slot0", 0);
   modeSlot[1] = prefs.getInt("slot1", 1);
+
+  safeMin = prefs.getInt("hs_min", 2360);
+  safeMax = prefs.getInt("hs_max", 2390);
+  mode1Min = prefs.getInt("hm1_min", 2390);
+  mode1Max = prefs.getInt("hm1_max", 2410);
+  mode2Min = prefs.getInt("hm2_min", 1150);
+  mode2Max = prefs.getInt("hm2_max", 1180);
+  
   prefs.end();
+  resolveOverlaps();
 }
 
-
 #include "ble_server.h"
+
+// ================= SELECTOR MASTER =================
+void readSelector() {
+  bool safe = false;
+
+  if (!USE_HALL_SELECTOR) {
+    safe = !digitalRead(SAFE_PIN) == LOW;
+    if(safe) selectorState = -1;
+    else selectorState = !digitalRead(MODE_PIN) ? 1 : 0;
+  } else {
+    if (calibState != -1) {
+      handleCalibration();
+    } else {
+      handleSelectorNormal();
+    }
+    
+    safe = (selectorState == -1);
+  }
+
+  // BLE Activation combo (Độc lập, nhấn Trigger lúc Safe để bật/tắt BLE)
+  if (safe && triggerState == HIGH) {
+    if (!safeHolding) {
+      safeHolding = true;
+      safeHoldStart = micros();
+      configToggleDone = false;
+    } else if (!configToggleDone && (micros() - safeHoldStart >= CONFIG_HOLD_TIME)) {
+      if (configActive) stopBLE();
+      else startBLE();
+      configToggleDone = true;
+    }
+  } else safeHolding = false;
+}
 
 // ================= HARDWARE WRITERS =================
 void setSol1PWM(int pwm) {
@@ -212,79 +417,39 @@ void updateFire() {
   
   uint32_t dt = micros() - tStart; 
 
-  // --- SOLENOID 1 LOGIC ---
   if (fcuState == S_SOL1_PEAK) {
     if (dt >= currentMode->t_sol1_off) {
-      setSol1PWM(0);
-      fcuState = S_WAIT_SOL2;
-    } 
-    else if (dt >= currentMode->t_sol1_peak_end) {
-      setSol1PWM(currentMode->sol1_hold_pwm);
-      fcuState = S_SOL1_HOLD;
+      setSol1PWM(0); fcuState = S_WAIT_SOL2;
+    } else if (dt >= currentMode->t_sol1_peak_end) {
+      setSol1PWM(currentMode->sol1_hold_pwm); fcuState = S_SOL1_HOLD;
     }
   }
 
   if (fcuState == S_SOL1_HOLD && dt >= currentMode->t_sol1_off) {
-    setSol1PWM(0);
-    fcuState = S_WAIT_SOL2;
+    setSol1PWM(0); fcuState = S_WAIT_SOL2;
   }
   
-  // --- WAIT BETWEEN 2 SOLENOID ---
   if (fcuState == S_WAIT_SOL2 && dt >= currentMode->t_sol2_on) {
-    setSol2PWM(255); 
-    fcuState = S_SOL2_PEAK;
+    setSol2PWM(255); fcuState = S_SOL2_PEAK;
   }
   
-  // --- SOLENOID 2 LOGIC ---
   if (fcuState == S_SOL2_PEAK) {
     if (dt >= currentMode->t_sol2_off) {
-      setSol2PWM(0);
-      fcuState = S_WAIT_CYCLE_END;
-    } 
-    else if (dt >= currentMode->t_sol2_peak_end) {
-      setSol2PWM(currentMode->sol2_hold_pwm);
-      fcuState = S_SOL2_HOLD;
+      setSol2PWM(0); fcuState = S_WAIT_CYCLE_END;
+    } else if (dt >= currentMode->t_sol2_peak_end) {
+      setSol2PWM(currentMode->sol2_hold_pwm); fcuState = S_SOL2_HOLD;
     }
   }
 
   if (fcuState == S_SOL2_HOLD && dt >= currentMode->t_sol2_off) {
-    setSol2PWM(0);
-    fcuState = S_WAIT_CYCLE_END;
+    setSol2PWM(0); fcuState = S_WAIT_CYCLE_END;
   }
 
-  // --- CYCLE END ---
   if (fcuState == S_WAIT_CYCLE_END) {
     bool bypassRPS = (shotsRemaining == 0 && pendingReleaseFire);
     uint32_t targetWaitTime = bypassRPS ? currentMode->t_base_cycle : currentMode->t_cycle_end;
-
-    if (dt >= targetWaitTime) {
-      nextShot(); 
-    }
+    if (dt >= targetWaitTime) nextShot(); 
   }
-}
-
-// ================= SELECTOR =================
-void readSelector() {
-  bool safe = !digitalRead(SAFE_PIN) == LOW;
-  if(safe){
-    selectorState = -1;
-  }else{
-    selectorState = !digitalRead(MODE_PIN) ? 1 : 0;
-  }
-  if (safe && triggerState == HIGH) {
-    if (!safeHolding) {
-      safeHolding = true;
-      safeHoldStart = micros();
-      configToggleDone = false;
-    } else if (!configToggleDone && (micros() - safeHoldStart >= CONFIG_HOLD_TIME)) {
-      if (configActive) {
-        stopBLE();
-      } else {
-        startBLE();
-      }
-      configToggleDone = true;
-    }
-  } else safeHolding = false;
 }
 
 // ================= LED INDICATORS =================
@@ -324,7 +489,6 @@ void setup() {
 
   ledcAttach(SOL1_PIN, PWM_FREQ, PWM_RES);
   ledcAttach(SOL2_PIN, PWM_FREQ, PWM_RES);
-
   ledcWrite(SOL1_PIN, 0); 
   ledcWrite(SOL2_PIN, 0);
 
@@ -333,6 +497,15 @@ void setup() {
   pinMode(SAFE_PIN, INPUT_PULLUP);
   pinMode(LED_PIN, OUTPUT);
   pinMode(TRIGGER_HALL_PIN, INPUT);
+  pinMode(SELECTOR_HALL_PIN, INPUT);
+
+  // Khởi tạo mảng lọc trung bình
+  int initialRead = analogRead(SELECTOR_HALL_PIN);
+  for (int i = 0; i < numReadings; i++) {
+    readings[i] = initialRead;
+    totalReadings += initialRead;
+  }
+  averageHall = initialRead;
   
   loadConfig();
 }
@@ -342,9 +515,7 @@ void loop() {
   readSelector();
   updateLED();
 
-  if (configActive) {
-    sendLiveStatesBLE();
-  }
+  if (configActive) sendLiveStatesBLE();
 
   if (selectorState == -1) {
     fcuState = S_IDLE; 
