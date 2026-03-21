@@ -119,7 +119,6 @@
         <button class="btn btn-primary" id="connectBtn" onclick="connectBLE()">Connect</button>
     </div>
 
-    <!-- Live States -->
     <div id="live-box">
         <div class="live-grid">
             <div class="live-card">
@@ -133,7 +132,6 @@
         </div>
     </div>
 
-    <!-- Config Form -->
     <div id="config-form">
 
         <div class="card">
@@ -166,8 +164,12 @@ const PROFILE_COUNT = 5;
 
 const PROFILE_FIELDS = [
     { key: "s1",   label: "Sol 1 Open (µs)" },
+    { key: "p1",   label: "Sol 1 Peak (µs)" },
+    { key: "h1",   label: "Sol 1 Hold PWM (0-255)" },
     { key: "d1",   label: "Delay After Sol 1 (µs)" },
     { key: "s2",   label: "Sol 2 Open (µs)" },
+    { key: "p2",   label: "Sol 2 Peak (µs)" },
+    { key: "h2",   label: "Sol 2 Hold PWM (0-255)" },
     { key: "d2",   label: "Delay After Sol 2 (µs)" },
     { key: "rpt",  label: "Rounds Per Pull (-1 auto)" },
     { key: "rptr", label: "Rounds Per Release" },
@@ -210,7 +212,7 @@ function buildUI() {
         const fields = PROFILE_FIELDS.map(({ key, label }) => `
             <div class="field-group">
                 <label>${label}</label>
-                <input type="number" id="${profileFieldId(i, key)}">
+                <input type="number" id="${profileFieldId(i, key)}" ${key.startsWith('h') ? 'min="0" max="255"' : ''}>
             </div>`
         ).join("");
 

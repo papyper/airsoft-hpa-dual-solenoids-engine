@@ -1,7 +1,7 @@
 #ifndef PIN
 #define PIN
 
-// ===== PIN =====
+// ===== SEEED XIAOZHI ESP32-C3 PIN ===== 
 const int SOL1_PIN = D10;
 const int SOL2_PIN = D3;
 const int TRIGGER_PIN = D7;

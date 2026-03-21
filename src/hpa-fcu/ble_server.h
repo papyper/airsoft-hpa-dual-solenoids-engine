@@ -1,7 +1,7 @@
 #ifndef BLE_CONFIG_H
 #define BLE_CONFIG_H
 
-#include <NimBLEDevice.h> // The optimized BLE library for ESP32-C3
+#include <NimBLEDevice.h>
 
 // Unique Identifiers for BLE
 #define SERVICE_UUID           "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
@@ -33,8 +33,8 @@ void updateConfigCharacteristic() {
     String csv = String(modeSlot[0]) + "," + String(modeSlot[1]);
     for (int i = 0; i < PROFILE_COUNT; i++) {
         FireMode &m = profiles[i];
-        csv += "," + String(m.sol1_open) + "," + String(m.after_sol1) + "," +
-               String(m.sol2_open) + "," + String(m.after_sol2) + "," +
+        csv += "," + String(m.sol1_open) + "," + String(m.sol1_peak) + "," + String(m.sol1_hold_pwm) + "," + String(m.after_sol1) + "," +
+               String(m.sol2_open) + "," + String(m.sol2_peak) + "," + String(m.sol2_hold_pwm) + "," + String(m.after_sol2) + "," +
                String(m.round_per_trigger) + "," + String(m.round_per_trigger_release) + "," +
                String(m.round_per_second);
     }
@@ -59,10 +59,20 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
             int vIdx = 2;
             for (int i = 0; i < PROFILE_COUNT; i++) {
                 String p = "p" + String(i);
-                prefs.putUInt((p+"s1").c_str(), getValue(value, ',', vIdx++).toInt());
-                prefs.putUInt((p+"d1").c_str(), getValue(value, ',', vIdx++).toInt());
-                prefs.putUInt((p+"s2").c_str(), getValue(value, ',', vIdx++).toInt());
-                prefs.putUInt((p+"d2").c_str(), getValue(value, ',', vIdx++).toInt());
+                
+                // Solenoid 1
+                prefs.putUInt((p+"s1").c_str(), getValue(value, ',', vIdx++).toInt()); // sol1_open
+                prefs.putUInt((p+"p1").c_str(), getValue(value, ',', vIdx++).toInt()); // sol1_peak
+                prefs.putInt((p+"h1").c_str(), getValue(value, ',', vIdx++).toInt());  // sol1_hold_pwm
+                prefs.putUInt((p+"d1").c_str(), getValue(value, ',', vIdx++).toInt()); // after_sol1
+                
+                // Solenoid 2
+                prefs.putUInt((p+"s2").c_str(), getValue(value, ',', vIdx++).toInt()); // sol2_open
+                prefs.putUInt((p+"p2").c_str(), getValue(value, ',', vIdx++).toInt()); // sol2_peak
+                prefs.putInt((p+"h2").c_str(), getValue(value, ',', vIdx++).toInt());  // sol2_hold_pwm
+                prefs.putUInt((p+"d2").c_str(), getValue(value, ',', vIdx++).toInt()); // after_sol2
+                
+                // Firing Mode
                 prefs.putInt((p+"rpt").c_str(), getValue(value, ',', vIdx++).toInt());
                 prefs.putInt((p+"rptr").c_str(), getValue(value, ',', vIdx++).toInt());
                 prefs.putInt((p+"rps").c_str(), getValue(value, ',', vIdx++).toInt());
@@ -91,7 +101,7 @@ class ServerCallbacks: public NimBLEServerCallbacks {
 
 void startBLE() {
   NimBLEDevice::init("PaPyPer_FCU");
-  NimBLEDevice::setMTU(512); 
+  NimBLEDevice::setMTU(512);
   
   NimBLEDevice::setPower(ESP_PWR_LVL_P9); 
 
