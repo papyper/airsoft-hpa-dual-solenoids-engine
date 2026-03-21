@@ -3,11 +3,6 @@
 
 #include <NimBLEDevice.h>
 
-// Unique Identifiers for BLE
-#define SERVICE_UUID           "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CONFIG_CHAR_UUID       "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define STATE_CHAR_UUID        "1c9441a1-f3b1-4f16-8eb5-7c37a6b72a6b"
-
 NimBLEServer* pServer = NULL;
 NimBLECharacteristic* pConfigCharacteristic = NULL;
 NimBLECharacteristic* pStateCharacteristic = NULL;
@@ -49,7 +44,7 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
             Serial.print("BLE Save Value: ");
             Serial.println(value);
 
-            prefs.begin("fcu", false);
+            prefs.begin(PREF_NAME, false);
             
             modeSlot[0] = getValue(value, ',', 0).toInt();
             modeSlot[1] = getValue(value, ',', 1).toInt();
@@ -100,7 +95,7 @@ class ServerCallbacks: public NimBLEServerCallbacks {
 };
 
 void startBLE() {
-  NimBLEDevice::init("PaPyPer_FCU");
+  NimBLEDevice::init(BLE_NAME);
   NimBLEDevice::setMTU(512);
   
   NimBLEDevice::setPower(ESP_PWR_LVL_P9); 
@@ -130,7 +125,7 @@ void startBLE() {
 
   NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
   
-  pAdvertising->setName("PaPyPer_FCU");
+  pAdvertising->setName(BLE_NAME);
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->start(); 
   

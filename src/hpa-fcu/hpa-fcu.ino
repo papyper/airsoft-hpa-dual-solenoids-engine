@@ -1,21 +1,11 @@
 #include <Preferences.h>
-#include "pin.h"
-
-// ===== CONFIGURATION MODE TOGGLE =====
-const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds
+#include "configs.h"
 
 bool configActive = false;
 uint32_t safeHoldStart = 0;
 bool safeHolding = false;
 bool configToggleDone = false;
 Preferences prefs;
-
-// ===== PWM CONFIGURATION (ESP32 Core v3.x.x API) =====
-#define PWM_FREQ 20000 // 20kHz
-#define PWM_RES 8      // res 8-bit (0 - 255)
-
-// ===== FIRING CONFIGURATION =====
-#define PROFILE_COUNT 5
 
 struct FireMode {
   // Solenoid 1
@@ -118,7 +108,7 @@ void precalcProfile(FireMode& m) {
 
 // ================= CONFIGURATION =================
 void loadConfig() {
-  prefs.begin("fcu", true);
+  prefs.begin(PREF_NAME, true);
   for (int i = 0; i < PROFILE_COUNT; i++) {
     String p = "p" + String(i);
     profiles[i].sol1_open = prefs.getUInt((p+"s1").c_str(), 30000);
