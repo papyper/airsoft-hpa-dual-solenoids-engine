@@ -26,79 +26,128 @@
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px 16px 100px;
         }
 
         .container { max-width: 640px; margin: 0 auto; }
 
         /* Header */
-        header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-        .header-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-        header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
-        header p { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+        header {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 16px; padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .header-icon {
+            width: 34px; height: 34px; background: var(--accent);
+            border-radius: 8px; display: flex; align-items: center;
+            justify-content: center; font-size: 17px; flex-shrink: 0;
+        }
+        header h1 { font-size: 17px; font-weight: 600; }
+        header p  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
 
         /* Status Bar */
         .status-bar {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; align-items: center; gap: 10px;
             background: var(--surface); border: 1px solid var(--border);
-            border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+            border-radius: 8px; padding: 9px 13px; margin-bottom: 14px;
         }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
-        .status-dot.connected { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); animation: pulse 2s infinite; }
+        .status-dot.connected  { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); animation: pulse 2s infinite; }
         .status-dot.connecting { background: var(--accent-orange); animation: blink 0.7s infinite; }
         @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
         @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.2; } }
-        #status-msg { font-size: 13px; color: var(--text-muted); flex: 1; margin-left: 10px; font-family: var(--font-mono); }
+        #status-msg { font-size: 12px; color: var(--text-muted); flex: 1; font-family: var(--font-mono); }
 
         /* Buttons */
-        .btn { padding: 10px 18px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s, transform .1s; letter-spacing: .3px; }
+        .btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s, transform .1s; }
         .btn:active { transform: scale(.97); }
         .btn:disabled { opacity: .4; cursor: not-allowed; }
         .btn-primary { background: var(--accent); color: #0d1117; }
-        .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-        .btn-success { background: var(--accent-green); color: #0d1117; width: 100%; padding: 13px; font-size: 14px; margin-top: 8px; }
+        .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 
         /* Live States */
         #live-box { display: none; }
-        .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-        .live-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
-        .live-card label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); display: block; margin-bottom: 4px; }
-        .live-val { font-size: 16px; font-weight: 700; font-family: var(--font-mono); color: var(--accent); }
+        .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .live-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px; }
+        .live-card label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); display: block; margin-bottom: 3px; }
+        .live-val { font-size: 15px; font-weight: 700; font-family: var(--font-mono); color: var(--accent); }
         .live-val.fired { color: var(--accent-red); }
 
         /* Cards */
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
-        .card h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+        .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
 
         /* Fire Mode */
-        .fire-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .fire-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* Inputs */
         .field-group { display: flex; flex-direction: column; gap: 4px; }
         .field-group label { font-size: 11px; color: var(--text-muted); }
 
         select, input[type=number] {
             background: var(--bg); color: var(--text);
             border: 1px solid var(--border); border-radius: 6px;
-            padding: 8px 10px; font-size: 13px; width: 100%;
-            font-family: var(--font-mono); transition: border-color .15s;
+            padding: 7px 10px; font-size: 12px; width: 100%;
+            font-family: var(--font-mono);
             -moz-appearance: textfield;
         }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px;
+        }
         select:focus, input[type=number]:focus { outline: none; border-color: var(--accent); }
 
-        /* Profile grid */
-        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* Config form hidden by default */
+        /* Config form */
         #config-form { display: none; }
 
-        /* Collapsible profile toggle */
-        .card-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; margin-bottom: 0; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-        .card-header h3 { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-        .card-header .chevron { font-size: 12px; color: var(--text-muted); transition: transform .2s; }
-        .card-header.open .chevron { transform: rotate(180deg); }
-        .card-body { margin-top: 14px; }
-        .card-body.collapsed { display: none; }
+        /* Tabs */
+        .tab-bar {
+            display: flex; gap: 4px; margin-bottom: 14px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 9px; padding: 4px;
+        }
+        .tab-btn {
+            flex: 1; padding: 7px 4px; font-size: 12px; font-weight: 600;
+            font-family: var(--font-mono); border: none; border-radius: 6px;
+            cursor: pointer; background: transparent; color: var(--text-muted); transition: .15s;
+        }
+        .tab-btn:hover  { color: var(--text); background: var(--surface2); }
+        .tab-btn.active { background: var(--accent); color: #0d1117; }
+
+        .profile-panel         { display: none; }
+        .profile-panel.active  { display: block; }
+
+        /* Param Groups */
+        .pgroup { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+        .pgroup:last-child { margin-bottom: 0; }
+        .pgroup-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface2); }
+        .pgroup-dot    { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .pgroup-dot.sol1 { background: #f85149; }
+        .pgroup-dot.sol2 { background: #3fb950; }
+        .pgroup-dot.rnd  { background: #d29922; }
+        .pgroup-label  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); }
+        .pgroup-body   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
+        .pgroup-body.three-col { grid-template-columns: 1fr 1fr 1fr; }
+
+        /* Sticky Save Bar */
+        .save-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            padding: 12px 16px; background: var(--bg);
+            border-top: 1px solid var(--border); z-index: 99;
+        }
+        .save-bar-inner { max-width: 640px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+        .btn-save {
+            flex: 1; padding: 11px; background: var(--accent-green); color: #0d1117;
+            border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer;
+            transition: opacity .15s;
+        }
+        .btn-save:disabled { opacity: .4; cursor: not-allowed; }
+        .save-hint  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+        .badge      { background: var(--accent-orange); color: #0d1117; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); }
+
+        .empty-panel { padding: 24px 0; text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
     </style>
 </head>
 <body>
@@ -121,38 +170,37 @@
 
     <div id="live-box">
         <div class="live-grid">
-            <div class="live-card">
-                <label>Selector</label>
-                <div class="live-val" id="sel-state">—</div>
-            </div>
-            <div class="live-card">
-                <label>Trigger</label>
-                <div class="live-val" id="trig-state">—</div>
-            </div>
+            <div class="live-card"><label>Selector</label><div class="live-val" id="sel-state">—</div></div>
+            <div class="live-card"><label>Trigger</label><div class="live-val" id="trig-state">—</div></div>
         </div>
     </div>
 
     <div id="config-form">
 
         <div class="card">
-            <h3>Fire Mode</h3>
-            <div class="fire-mode-grid">
-                <div class="field-group">
-                    <label>Mode 1</label>
-                    <select id="slot0"></select>
-                </div>
-                <div class="field-group">
-                    <label>Mode 2</label>
-                    <select id="slot1"></select>
-                </div>
+            <div class="card-title">Fire Mode</div>
+            <div class="fire-grid">
+                <div class="field-group"><label>Mode 1</label><select id="slot0"></select></div>
+                <div class="field-group"><label>Mode 2</label><select id="slot1"></select></div>
             </div>
         </div>
 
-        <div id="profiles-container"></div>
+        <div class="card" style="padding-bottom:6px">
+            <div class="card-title">Profiles</div>
+            <div class="tab-bar" id="tabBar"></div>
+            <div id="profiles-container"></div>
+        </div>
 
-        <button class="btn btn-success" id="saveBtn" onclick="saveConfigs()">Save Configuration</button>
     </div>
 
+</div>
+
+<!-- Sticky Save Bar -->
+<div class="save-bar" id="save-bar" style="display:none">
+    <div class="save-bar-inner">
+        <span class="save-hint" id="save-hint"></span>
+        <button class="btn-save" id="saveBtn" onclick="saveConfigs()">Save Configuration</button>
+    </div>
 </div>
 
 <script>
@@ -162,27 +210,31 @@ const CONFIG_CHAR   = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const STATE_CHAR    = "1c9441a1-f3b1-4f16-8eb5-7c37a6b72a6b";
 const PROFILE_COUNT = 5;
 
-const PROFILE_FIELDS = [
-    { key: "s1",   label: "Sol 1 Open (µs)" },
-    { key: "p1",   label: "Sol 1 Peak (µs)" },
-    { key: "h1",   label: "Sol 1 Hold PWM (0-255)" },
-    { key: "d1",   label: "Delay After Sol 1 (µs)" },
-    { key: "s2",   label: "Sol 2 Open (µs)" },
-    { key: "p2",   label: "Sol 2 Peak (µs)" },
-    { key: "h2",   label: "Sol 2 Hold PWM (0-255)" },
-    { key: "d2",   label: "Delay After Sol 2 (µs)" },
-    { key: "rpt",  label: "Rounds Per Pull (-1 auto)" },
-    { key: "rptr", label: "Rounds Per Release" },
-    { key: "rps",  label: "Rounds Per Second" },
+const SOL1_FIELDS = [
+    { key: "s1", label: "Open (µs)" },
+    { key: "p1", label: "Peak (µs)" },
+    { key: "h1", label: "Hold PWM (0–255)", min: 0, max: 255 },
+    { key: "d1", label: "Delay After (µs)" },
 ];
+const SOL2_FIELDS = [
+    { key: "s2", label: "Open (µs)" },
+    { key: "p2", label: "Peak (µs)" },
+    { key: "h2", label: "Hold PWM (0–255)", min: 0, max: 255 },
+    { key: "d2", label: "Delay After (µs)" },
+];
+const ROUND_FIELDS = [
+    { key: "rpt",  label: "Per Pull" },
+    { key: "rptr", label: "Per Release" },
+    { key: "rps",  label: "Per Second" },
+];
+const ALL_FIELDS = [...SOL1_FIELDS, ...SOL2_FIELDS, ...ROUND_FIELDS];
 
-// ─── DOM Helpers ─────────────────────────────────────────────────────────────
+// ─── DOM ─────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
 function setStatus(msg, state = "") {
     $("status-msg").textContent = msg;
-    const dot = $("status-dot");
-    dot.className = "status-dot" + (state ? ` ${state}` : "");
+    $("status-dot").className   = "status-dot" + (state ? ` ${state}` : "");
 }
 
 function setLiveState(sel, trig) {
@@ -191,55 +243,91 @@ function setLiveState(sel, trig) {
     $("trig-state").className   = "live-val" + (trig === "Fired" ? " fired" : "");
 }
 
-function profileFieldId(profileIdx, fieldKey) {
-    return `p${profileIdx}_${fieldKey}`;
-}
-
-function getProfileFieldEl(profileIdx, fieldKey) {
-    return $(profileFieldId(profileIdx, fieldKey));
-}
+function fid(pi, key) { return `p${pi}_${key}`; }
+function fel(pi, key) { return $(fid(pi, key)); }
 
 // ─── Build UI ────────────────────────────────────────────────────────────────
 function buildUI() {
-    const slotOptions = Array.from({ length: PROFILE_COUNT }, (_, i) =>
-        `<option value="${i}">Profile ${i + 1}</option>`
+    // Slot selects
+    const opts = Array.from({ length: PROFILE_COUNT }, (_, i) =>
+        `<option value="${i}">Profile ${i + 1}</option>`).join("");
+    $("slot0").innerHTML = opts;
+    $("slot1").innerHTML = opts;
+
+    // Tabs
+    $("tabBar").innerHTML = Array.from({ length: PROFILE_COUNT }, (_, i) =>
+        `<button class="tab-btn${i === 0 ? " active" : ""}" onclick="switchTab(${i})">P${i + 1}</button>`
     ).join("");
-    $("slot0").innerHTML = slotOptions;
-    $("slot1").innerHTML = slotOptions;
 
-    const container = $("profiles-container");
-    container.innerHTML = Array.from({ length: PROFILE_COUNT }, (_, i) => {
-        const fields = PROFILE_FIELDS.map(({ key, label }) => `
-            <div class="field-group">
-                <label>${label}</label>
-                <input type="number" id="${profileFieldId(i, key)}" ${key.startsWith('h') ? 'min="0" max="255"' : ''}>
-            </div>`
-        ).join("");
-
-        return `
-        <div class="card">
-            <div class="card-header open" onclick="toggleProfile(this)">
-                <h3>Profile ${i + 1}</h3>
-                <span class="chevron">▼</span>
-            </div>
-            <div class="card-body profile-grid">${fields}</div>
-        </div>`;
-    }).join("");
+    // Profile panels
+    $("profiles-container").innerHTML = Array.from({ length: PROFILE_COUNT }, (_, i) =>
+        `<div id="panel${i}" class="profile-panel${i === 0 ? " active" : ""}">
+            ${buildGroup(i, "sol1", "Solenoid 1", SOL1_FIELDS, "1fr 1fr")}
+            ${buildGroup(i, "sol2", "Solenoid 2", SOL2_FIELDS, "1fr 1fr")}
+            ${buildGroup(i, "rnd",  "Rounds",     ROUND_FIELDS, "1fr 1fr 1fr")}
+        </div>`
+    ).join("");
 }
 
-function toggleProfile(header) {
-    header.classList.toggle("open");
-    header.nextElementSibling.classList.toggle("collapsed");
+function buildGroup(pi, dotClass, title, fields, cols) {
+    const inputs = fields.map(({ key, label, min, max }) => {
+        const extra = (min !== undefined) ? `min="${min}" max="${max}"` : "";
+        return `<div class="field-group">
+            <label>${label}</label>
+            <input type="number" id="${fid(pi, key)}" ${extra}>
+        </div>`;
+    }).join("");
+    return `
+    <div class="pgroup">
+        <div class="pgroup-header">
+            <div class="pgroup-dot ${dotClass}"></div>
+            <span class="pgroup-label">${title}</span>
+        </div>
+        <div class="pgroup-body" style="grid-template-columns:${cols}">${inputs}</div>
+    </div>`;
+}
+
+function switchTab(i) {
+    document.querySelectorAll(".tab-btn").forEach((b, j) => b.classList.toggle("active", j === i));
+    document.querySelectorAll(".profile-panel").forEach((p, j) => p.classList.toggle("active", j === i));
 }
 
 // ─── BLE State ───────────────────────────────────────────────────────────────
 let configChar, stateChar;
 
+// ─── Change Tracking ─────────────────────────────────────────────────────────
+let savedSnapshot = null;
+
+function takeSnapshot() {
+    return [
+        $("slot0").value,
+        $("slot1").value,
+        ...Array.from({ length: PROFILE_COUNT }, (_, i) =>
+            ALL_FIELDS.map(({ key }) => fel(i, key).value)
+        ).flat()
+    ].join(",");
+}
+
+function checkDirty() {
+    if (!savedSnapshot) return;
+    const dirty = takeSnapshot() !== savedSnapshot;
+    $("save-hint").innerHTML = dirty ? `<span class="badge">UNSAVED</span>` : "";
+}
+
+function attachChangeListeners() {
+    ["slot0", "slot1"].forEach(id => $(id).addEventListener("change", checkDirty));
+    for (let i = 0; i < PROFILE_COUNT; i++) {
+        for (const { key } of ALL_FIELDS) {
+            fel(i, key).addEventListener("input", checkDirty);
+        }
+    }
+}
+
 // ─── BLE Read / Write ─────────────────────────────────────────────────────────
 async function readConfigs() {
     setStatus("Reading configs...", "connecting");
-    const raw    = await configChar.readValue();
-    const vals   = new TextDecoder().decode(raw).split(",");
+    const raw  = await configChar.readValue();
+    const vals = new TextDecoder().decode(raw).split(",");
 
     if (vals.length < 2) return;
     $("slot0").value = vals[0];
@@ -247,10 +335,12 @@ async function readConfigs() {
 
     let idx = 2;
     for (let i = 0; i < PROFILE_COUNT; i++) {
-        for (const { key } of PROFILE_FIELDS) {
-            getProfileFieldEl(i, key).value = vals[idx++] ?? "";
+        for (const { key } of ALL_FIELDS) {
+            fel(i, key).value = vals[idx++] ?? "";
         }
     }
+    savedSnapshot = takeSnapshot();
+    $("save-hint").innerHTML = "";
     setStatus("Connected & Ready", "connected");
 }
 
@@ -260,15 +350,10 @@ async function saveConfigs() {
     btn.disabled    = true;
 
     try {
-        const csv = [
-            $("slot0").value,
-            $("slot1").value,
-            ...Array.from({ length: PROFILE_COUNT }, (_, i) =>
-                PROFILE_FIELDS.map(({ key }) => getProfileFieldEl(i, key).value)
-            ).flat()
-        ];
-
-        await configChar.writeValueWithResponse(new TextEncoder().encode(csv.join(",")));
+        const csv = takeSnapshot();
+        await configChar.writeValueWithResponse(new TextEncoder().encode(csv));
+        savedSnapshot = csv;
+        $("save-hint").innerHTML = "";
         btn.textContent = "✓ Saved!";
     } catch (err) {
         console.error(err);
@@ -283,6 +368,7 @@ function onDisconnect() {
     setStatus("Disconnected!", "");
     $("live-box").style.display    = "none";
     $("config-form").style.display = "none";
+    $("save-bar").style.display    = "none";
     $("refreshBtn").style.display  = "none";
     $("connectBtn").style.display  = "block";
 }
@@ -307,10 +393,8 @@ async function connectBLE() {
         configChar    = await service.getCharacteristic(CONFIG_CHAR);
         stateChar     = await service.getCharacteristic(STATE_CHAR);
 
-        // Read configs
         await readConfigs();
 
-        // Read & subscribe to live state
         setStatus("Syncing live states…", "connecting");
         const initRaw = await stateChar.readValue();
         const [sel, trig] = new TextDecoder().decode(initRaw).split(",");
@@ -319,10 +403,10 @@ async function connectBLE() {
         await stateChar.startNotifications();
         stateChar.addEventListener("characteristicvaluechanged", onStateChanged);
 
-        // Show connected UI
         setStatus("Connected & Ready", "connected");
         $("live-box").style.display    = "block";
         $("config-form").style.display = "block";
+        $("save-bar").style.display    = "block";
         $("refreshBtn").style.display  = "block";
         $("connectBtn").style.display  = "none";
 
@@ -334,6 +418,7 @@ async function connectBLE() {
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 buildUI();
+attachChangeListeners();
 </script>
 </body>
 </html>
