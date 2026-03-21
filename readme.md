@@ -61,7 +61,7 @@ Each profile allows you to fine-tune the following parameters (all time values a
 * **Delay After Sol (µs):** The delay/dwell time before the system proceeds to the next step.
 
 #### Firing Mode Settings
-* **Rounds Per Pull:** The number of rounds fired when the trigger is pulled. 
+* **Rounds Per Pull:** The number of rounds fired when the trigger is pulled. Ex:
   * Set `1` = Semi
   * Set `3` = 3-round burst
   * Set `-1` = Full Auto.
