@@ -81,7 +81,7 @@ bool logicalLedState = false;
 void precalcProfile(FireMode& m) {
   uint32_t t = 0;
   
-  // Xử lý Solenoid 1
+  // Solenoid 1
   uint32_t actual_sol1_peak = (m.sol1_peak > m.sol1_open) ? m.sol1_open : m.sol1_peak;
   m.t_sol1_peak_end = t + actual_sol1_peak;
   t += m.sol1_open;
@@ -90,7 +90,7 @@ void precalcProfile(FireMode& m) {
   t += m.after_sol1;
   m.t_sol2_on = t;
 
-  // Xử lý Solenoid 2
+  // Solenoid 2
   uint32_t actual_sol2_peak = (m.sol2_peak > m.sol2_open) ? m.sol2_open : m.sol2_peak;
   m.t_sol2_peak_end = t + actual_sol2_peak;
   t += m.sol2_open;
