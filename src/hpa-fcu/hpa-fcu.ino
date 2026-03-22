@@ -285,7 +285,7 @@ void readSelector() {
     safe = (selectorState == -1);
   }
 
-  if (safe && physicalTriggerState == HIGH) {
+  if (safe && (physicalTriggerState == HIGH || triggerState == HIGH)) {
     if (!safeHolding) {
       safeHolding = true;
       safeHoldStart = micros();
