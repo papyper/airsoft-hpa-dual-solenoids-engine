@@ -23,6 +23,9 @@ const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds
 // ===== SELECTOR CONFIGURATION =====
 // Set to true to use Hall sensor, false for traditional physical switches
 #define USE_HALL_SELECTOR true
+#define HALL_SELECTOR_SAFE_FACTOR 0.30
+#define HALL_SELECTOR_M1_FACTOR 0.35
+#define HALL_SELECTOR_M2_FACTOR 0.005
 
 // ===== FIRING CONFIGURATION =====
 #define PROFILE_COUNT 5

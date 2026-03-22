@@ -151,7 +151,7 @@ void sendLiveStatesBLE() {
   static bool lastSafe = false;
   static int lastMode = -1;
   static bool lastFired = false;
-  static uint32_t lastHallSend = 0; // Timer để gửi rawHall 10Hz
+  static uint32_t lastHallSend = 0;
 
   bool safe = selectorState == -1;
   int modeIndex = selectorState;
@@ -159,10 +159,8 @@ void sendLiveStatesBLE() {
 
   bool stateChanged = (safe != lastSafe || modeIndex != lastMode || fired != lastFired);
   
-  // Kiểm tra xem đã đủ 100ms (10 lần/s) và có đang dùng Hall Sensor không
   bool timeToSendHall = USE_HALL_SELECTOR && (millis() - lastHallSend >= 100);
 
-  // Chỉ gửi BLE khi có sự thay đổi trạng thái HOẶC đã đến nhịp gửi rawHall
   if ((stateChanged || timeToSendHall) && pStateCharacteristic != NULL) {
       lastSafe = safe;
       lastMode = modeIndex;
@@ -177,7 +175,6 @@ void sendLiveStatesBLE() {
       String trigStr = fired ? "Fired" : "Idle";
       String stateStr = selStr + "," + trigStr;
 
-      // Nối thêm rawHall vào cuối chuỗi nếu đang bật USE_HALL_SELECTOR
       if (USE_HALL_SELECTOR) {
           stateStr += "," + String(analogRead(SELECTOR_HALL_PIN));
       }

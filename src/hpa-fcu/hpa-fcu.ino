@@ -192,33 +192,25 @@ void handleCalibration() {
 void handleSelectorNormal() {
   int rawHall = analogRead(SELECTOR_HALL_PIN);
   
-  // Realtime EMA filter: Lọc mượt nhiễu điện
   if (smoothedHall < 0) smoothedHall = rawHall;
   else smoothedHall = smoothedHall * 0.8 + rawHall * 0.2;
 
-  // 1. Tính toán khoảng cách (gap) giữa các mốc
   int gapSafeM1 = abs(safeVal - mode1Val);
   int gapM1M2   = abs(mode1Val - mode2Val);
 
-  // 2. Định nghĩa "Bán kính hút" (Capture Radius) cho từng mốc
-  // Hệ số 0.35 nghĩa là vùng nhận diện chiếm 35% khoảng cách.
-  // Bạn phải gạt qua 65% quãng đường thì nó mới chịu nhảy số, triệt tiêu vụ non-linear.
-  int rSafe = gapSafeM1 * 0.35;
-  int rM1   = min(gapSafeM1, gapM1M2) * 0.35; // Mode 1 nằm giữa nên lấy gap nhỏ hơn cho an toàn
-  int rM2   = gapM1M2 * 0.35;
+  int rSafe = gapSafeM1 * HALL_SELECTOR_SAFE_FACTOR;
+  int rM1   = min(gapSafeM1, gapM1M2) * HALL_SELECTOR_M1_FACTOR;
+  int rM2   = gapM1M2 * HALL_SELECTOR_M2_FACTOR;
 
-  // 3. Kiểm tra xem có đang nằm chắc chắn trong vùng nào không
   if (abs(smoothedHall - safeVal) <= rSafe) {
-    selectorState = -1; // Safe
-  } else if (abs(smoothedHall - mode1Val) <= rM1) {
-    selectorState = 0;  // Mode 1
-  } else if (abs(smoothedHall - mode2Val) <= rM2) {
-    selectorState = 1;  // Mode 2
+    selectorState = -1; 
+  } 
+  else if (abs(smoothedHall - mode1Val) <= rM1) {
+    selectorState = 0;  
+  } 
+  else if (abs(smoothedHall - mode2Val) <= rM2) {
+    selectorState = 1;  
   }
-  
-  // LƯU Ý: Nếu giá trị smoothedHall rơi vào khoảng giữa (lớn hơn 35% nhưng chưa tới mốc kia),
-  // khối lệnh if-else trên sẽ bị bỏ qua -> selectorState KHÔNG bị ghi đè, 
-  // nó tự động giữ nguyên trạng thái cũ (Hysteresis).
 }
 
 // ================= SELECTOR MASTER =================
@@ -411,7 +403,6 @@ void setup() {
   pinMode(TRIGGER_HALL_PIN, INPUT);
   pinMode(SELECTOR_HALL_PIN, INPUT);
 
-  // Khởi tạo bộ lọc với giá trị ngay lúc bật máy
   smoothedHall = analogRead(SELECTOR_HALL_PIN);
   
   loadConfig();
