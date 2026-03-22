@@ -33,7 +33,11 @@ void updateConfigCharacteristic() {
                String(m.round_per_trigger) + "," + String(m.round_per_trigger_release) + "," +
                String(m.round_per_second);
     }
-    pConfigCharacteristic->setValue((uint8_t*)csv.c_str(), csv.length());
+    csv += "," + String(safeVal) + "," + String(mode1Val) + "," + String(mode2Val);
+           
+    if(pConfigCharacteristic != NULL) {
+        pConfigCharacteristic->setValue((uint8_t*)csv.c_str(), csv.length());
+    }
 }
 
 class ConfigCallbacks: public NimBLECharacteristicCallbacks {
@@ -47,7 +51,7 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
             // Intercept Hall Sensor Calibration command
             if (value.startsWith("CAL,")) {
                 int stateToCalibrate = value.substring(4).toInt();
-                startCalibration(stateToCalibrate); // Thay đổi ở đây
+                startCalibration(stateToCalibrate); 
                 return; // Stop here, do not proceed to saving profiles
             }
 
@@ -147,6 +151,7 @@ void sendLiveStatesBLE() {
   static bool lastSafe = false;
   static int lastMode = -1;
   static bool lastFired = false;
+  static uint32_t lastHallSend = 0; // Timer để gửi rawHall 10Hz
 
   bool safe = selectorState == -1;
   int modeIndex = selectorState;
@@ -154,11 +159,16 @@ void sendLiveStatesBLE() {
 
   bool stateChanged = (safe != lastSafe || modeIndex != lastMode || fired != lastFired);
   
-  lastSafe = safe;
-  lastMode = modeIndex;
-  lastFired = fired;
+  // Kiểm tra xem đã đủ 100ms (10 lần/s) và có đang dùng Hall Sensor không
+  bool timeToSendHall = USE_HALL_SELECTOR && (millis() - lastHallSend >= 100);
 
-  if (stateChanged && pStateCharacteristic != NULL) {
+  // Chỉ gửi BLE khi có sự thay đổi trạng thái HOẶC đã đến nhịp gửi rawHall
+  if ((stateChanged || timeToSendHall) && pStateCharacteristic != NULL) {
+      lastSafe = safe;
+      lastMode = modeIndex;
+      lastFired = fired;
+      if (timeToSendHall) lastHallSend = millis();
+
       String selStr;
       if (safe) selStr = "Safe";
       else if (modeIndex == 0) selStr = "Mode 1";
@@ -167,9 +177,26 @@ void sendLiveStatesBLE() {
       String trigStr = fired ? "Fired" : "Idle";
       String stateStr = selStr + "," + trigStr;
 
+      // Nối thêm rawHall vào cuối chuỗi nếu đang bật USE_HALL_SELECTOR
+      if (USE_HALL_SELECTOR) {
+          stateStr += "," + String(analogRead(SELECTOR_HALL_PIN));
+      }
+
       pStateCharacteristic->setValue((uint8_t*)stateStr.c_str(), stateStr.length());
       pStateCharacteristic->notify();
   }
-} 
+}
+
+void sendCalibrationDoneBLE(int state) {
+  if (pStateCharacteristic != NULL && deviceConnected) {
+      String msg = "CAL_DONE," + String(state) + 
+                   "," + String(safeVal) + 
+                   "," + String(mode1Val) + 
+                   "," + String(mode2Val);
+                   
+      pStateCharacteristic->setValue((uint8_t*)msg.c_str(), msg.length());
+      pStateCharacteristic->notify();
+  }
+}
 
 #endif

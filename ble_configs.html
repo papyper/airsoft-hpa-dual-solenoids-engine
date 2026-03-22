@@ -146,8 +146,6 @@
         .btn-save:disabled { opacity: .4; cursor: not-allowed; }
         .save-hint  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
         .badge      { background: var(--accent-orange); color: #0d1117; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); }
-
-        .empty-panel { padding: 24px 0; text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
     </style>
 </head>
 <body>
@@ -170,22 +168,31 @@
 
     <div id="live-box">
         <div class="live-grid">
-            <div class="live-card"><label>Selector</label><div class="live-val" id="sel-state">—</div></div>
+            <div class="live-card"><label id="sel-label">Selector</label><div class="live-val" id="sel-state">—</div></div>
             <div class="live-card"><label>Trigger</label><div class="live-val" id="trig-state">—</div></div>
         </div>
     </div>
 
     <div id="config-form">
-        
+
         <div class="card" style="margin-bottom:12px">
             <div class="card-title">Selector Calibration (Hall Sensor)</div>
             <p style="font-size:11px; color:var(--text-muted); margin-bottom:10px; font-family: var(--font-mono);">
                 Move your physical selector to the desired position, then press the corresponding button below.
             </p>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-ghost" style="flex:1" onclick="sendCalibrate(event, 0)">Safe</button>
-                <button class="btn btn-ghost" style="flex:1" onclick="sendCalibrate(event, 1)">Mode 1</button>
-                <button class="btn btn-ghost" style="flex:1" onclick="sendCalibrate(event, 2)">Mode 2</button>
+            <div style="display:flex; gap:8px; text-align: center;">
+                <div style="flex:1">
+                    <button class="btn btn-ghost" style="width:100%" id="calBtn0" onclick="sendCalibrate(0)">Safe</button>
+                    <div id="calRes0" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
+                </div>
+                <div style="flex:1">
+                    <button class="btn btn-ghost" style="width:100%" id="calBtn1" onclick="sendCalibrate(1)">Mode 1</button>
+                    <div id="calRes1" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
+                </div>
+                <div style="flex:1">
+                    <button class="btn btn-ghost" style="width:100%" id="calBtn2" onclick="sendCalibrate(2)">Mode 2</button>
+                    <div id="calRes2" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
+                </div>
             </div>
         </div>
 
@@ -207,7 +214,6 @@
 
 </div>
 
-<!-- Sticky Save Bar -->
 <div class="save-bar" id="save-bar" style="display:none">
     <div class="save-bar-inner">
         <span class="save-hint" id="save-hint"></span>
@@ -249,10 +255,18 @@ function setStatus(msg, state = "") {
     $("status-dot").className   = "status-dot" + (state ? ` ${state}` : "");
 }
 
-function setLiveState(sel, trig) {
+function setLiveState(sel, trig, rawHall) {
     $("sel-state").textContent  = sel;
     $("trig-state").textContent = trig;
     $("trig-state").className   = "live-val" + (trig === "Fired" ? " fired" : "");
+    
+    // Cập nhật label nếu có giá trị rawHall gửi kèm
+    const label = $("sel-label");
+    if (rawHall !== undefined) {
+        label.textContent = `Selector (${rawHall})`;
+    } else {
+        label.textContent = "Selector";
+    }
 }
 
 function fid(pi, key) { return `p${pi}_${key}`; }
@@ -351,6 +365,14 @@ async function readConfigs() {
             fel(i, key).value = vals[idx++] ?? "";
         }
     }
+
+    // Load calibration center values
+    if (vals.length >= idx + 3) {
+        const r0 = $("calRes0"); if(r0) r0.textContent = `[ ${vals[idx]} ]`;
+        const r1 = $("calRes1"); if(r1) r1.textContent = `[ ${vals[idx+1]} ]`;
+        const r2 = $("calRes2"); if(r2) r2.textContent = `[ ${vals[idx+2]} ]`;
+    }
+
     savedSnapshot = takeSnapshot();
     $("save-hint").innerHTML = "";
     setStatus("Connected & Ready", "connected");
@@ -386,9 +408,33 @@ function onDisconnect() {
 }
 
 function onStateChanged(event) {
-    const [sel, trig] = new TextDecoder().decode(event.target.value).split(",");
-    if (sel !== undefined && trig !== undefined) setLiveState(sel, trig);
+    const rawData = new TextDecoder().decode(event.target.value);
+    const parts = rawData.split(",");
+
+    if (parts[0] === "CAL_DONE") {
+        const stateIdx = parts[1];
+        
+        const r0 = $("calRes0"); if(r0) r0.textContent = `[ ${parts[2]} ]`;
+        const r1 = $("calRes1"); if(r1) r1.textContent = `[ ${parts[3]} ]`;
+        const r2 = $("calRes2"); if(r2) r2.textContent = `[ ${parts[4]} ]`;
+        
+        const btn = $(`calBtn${stateIdx}`);
+        if (btn) {
+            btn.textContent = "✓ Set";
+            setTimeout(() => { 
+                btn.textContent = stateIdx == 0 ? "Safe" : stateIdx == 1 ? "Mode 1" : "Mode 2"; 
+                btn.disabled = false; 
+            }, 2000);
+        }
+        return;
+    }
+
+    const sel = parts[0];
+    const trig = parts[1];
+    const rawHall = parts[2];
+    if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall);
 }
+
 
 async function connectBLE() {
     try {
@@ -409,8 +455,8 @@ async function connectBLE() {
 
         setStatus("Syncing live states…", "connecting");
         const initRaw = await stateChar.readValue();
-        const [sel, trig] = new TextDecoder().decode(initRaw).split(",");
-        if (sel !== undefined && trig !== undefined) setLiveState(sel, trig);
+        const [sel, trig, rawHall] = new TextDecoder().decode(initRaw).split(",");
+        if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall);
 
         await stateChar.startNotifications();
         stateChar.addEventListener("characteristicvaluechanged", onStateChanged);
@@ -429,27 +475,38 @@ async function connectBLE() {
 }
 
 // ─── BLE Calibrate Hall ──────────────────────────────────────────────────────
-async function sendCalibrate(event, stateIndex) {
+async function sendCalibrate(stateIndex) {
     if (!configChar) return alert("Connect BLE first!");
     
-    const btn = event.target;
+    const btn = $(`calBtn${stateIndex}`);
+    const res = $(`calRes${stateIndex}`);
     const originalText = btn.textContent;
-    btn.textContent = "Hold...";
+    
+    btn.textContent = "Calibrating...";
     btn.disabled = true;
+    res.textContent = "Hold selector...";
 
     try {
         const cmd = "CAL," + stateIndex;
         await configChar.writeValueWithResponse(new TextEncoder().encode(cmd));
-        btn.textContent = "✓ Set";
+        
+        setTimeout(() => {
+            if (btn.disabled && btn.textContent === "Calibrating...") {
+                btn.textContent = "Timeout";
+                res.textContent = "Failed";
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }, 7000);
+
     } catch(e) {
         console.error(e);
         btn.textContent = "Error";
+        res.textContent = "Failed";
+        setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 2000);
     }
-    
-    setTimeout(() => { 
-        btn.textContent = originalText; 
-        btn.disabled = false; 
-    }, 1500);
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
