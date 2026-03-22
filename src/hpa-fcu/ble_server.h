@@ -159,7 +159,7 @@ void sendLiveStatesBLE() {
 
   bool stateChanged = (safe != lastSafe || modeIndex != lastMode || fired != lastFired);
   
-  bool timeToSendHall = USE_HALL_SELECTOR && (millis() - lastHallSend >= 100);
+  bool timeToSendHall = (USE_HALL_SELECTOR || USE_HALL_TRIGGER) && (millis() - lastHallSend >= 100);
 
   if ((stateChanged || timeToSendHall) && pStateCharacteristic != NULL) {
       lastSafe = safe;
@@ -175,8 +175,8 @@ void sendLiveStatesBLE() {
       String trigStr = fired ? "Fired" : "Idle";
       String stateStr = selStr + "," + trigStr;
 
-      if (USE_HALL_SELECTOR) {
-          stateStr += "," + String(analogRead(SELECTOR_HALL_PIN));
+      if (USE_HALL_SELECTOR || USE_HALL_TRIGGER) {
+          stateStr += "," + String(analogRead(SELECTOR_HALL_PIN)) + "," + String(analogRead(TRIGGER_HALL_PIN));
       }
 
       pStateCharacteristic->setValue((uint8_t*)stateStr.c_str(), stateStr.length());

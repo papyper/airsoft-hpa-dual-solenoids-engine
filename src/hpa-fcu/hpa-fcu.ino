@@ -61,7 +61,6 @@ const uint32_t debounceDelay = 3000;
 
 // ===== SELECTOR (HALL & SWITCH) =====
 int selectorState = -1; // -1: safe, 0: mode 0, 1: mode 1
-float smoothedHall = -1; // Realtime EMA filter to prevent lag
 
 // Hall Sensor Calibration Centers (Nearest Neighbor)
 int safeVal = 2400;
@@ -74,6 +73,8 @@ volatile uint32_t calibStartTime = 0;
 volatile long calibSum = 0;
 volatile int calibSamples = 0;
 const uint32_t CALIB_DURATION = 5000;
+float filteredHall = 0;
+bool hallInitialized = false;
 
 // ===== LED TIMERS =====
 uint32_t ledTimer = 0;
@@ -190,27 +191,68 @@ void handleCalibration() {
 
 // ================= (NORMAL OPERATION) =================
 void handleSelectorNormal() {
-  int rawHall = analogRead(SELECTOR_HALL_PIN);
-  
-  if (smoothedHall < 0) smoothedHall = rawHall;
-  else smoothedHall = smoothedHall * 0.8 + rawHall * 0.2;
+  int raw = analogRead(SELECTOR_HALL_PIN);
 
-  int gapSafeM1 = abs(safeVal - mode1Val);
-  int gapM1M2   = abs(mode1Val - mode2Val);
-
-  int rSafe = gapSafeM1 * HALL_SELECTOR_SAFE_FACTOR;
-  int rM1   = min(gapSafeM1, gapM1M2) * HALL_SELECTOR_M1_FACTOR;
-  int rM2   = gapM1M2 * HALL_SELECTOR_M2_FACTOR;
-
-  if (abs(smoothedHall - safeVal) <= rSafe) {
-    selectorState = -1; 
-  } 
-  else if (abs(smoothedHall - mode1Val) <= rM1) {
-    selectorState = 0;  
-  } 
-  else if (abs(smoothedHall - mode2Val) <= rM2) {
-    selectorState = 1;  
+  // ===== FILTER (EMA) =====
+  if (!hallInitialized) {
+    filteredHall = raw;
+    hallInitialized = true;
+  } else {
+    filteredHall = filteredHall * (1.0f - HALL_FILTER_ALPHA) + raw * HALL_FILTER_ALPHA;
   }
+
+  int hall = (int)filteredHall;
+
+  // ===== SORT VALUES =====
+  int v0 = safeVal;
+  int v1 = mode1Val;
+  int v2 = mode2Val;
+
+  if (v0 > v1) { int t = v0; v0 = v1; v1 = t; }
+  if (v1 > v2) { int t = v1; v1 = v2; v2 = t; }
+  if (v0 > v1) { int t = v0; v0 = v1; v1 = t; }
+
+  // ===== MIDPOINT =====
+  int b1 = (v0 + v1) / 2;
+  int b2 = (v1 + v2) / 2;
+
+  // ===== MAP STATE =====
+  int state0 = (v0 == safeVal) ? -1 : (v0 == mode1Val ? 0 : 1);
+  int state1 = (v1 == safeVal) ? -1 : (v1 == mode1Val ? 0 : 1);
+  int state2 = (v2 == safeVal) ? -1 : (v2 == mode1Val ? 0 : 1);
+
+  int newState = selectorState; 
+
+  // ===== HYSTERESIS LOGIC =====
+  switch (selectorState) {
+    case -1: // SAFE
+      if (hall > b1 + HALL_HYSTERESIS) {
+        newState = (hall <= b2) ? state1 : state2;
+      }
+      break;
+
+    case 0: // MODE 0
+      if (hall < b1 - HALL_HYSTERESIS) {
+        newState = state0;
+      } else if (hall > b2 + HALL_HYSTERESIS) {
+        newState = state2;
+      }
+      break;
+
+    case 1: // MODE 1
+      if (hall < b2 - HALL_HYSTERESIS) {
+        newState = (hall <= b1) ? state0 : state1;
+      }
+      break;
+
+    default:
+      if (hall <= b1) newState = state0;
+      else if (hall <= b2) newState = state1;
+      else newState = state2;
+      break;
+  }
+
+  selectorState = newState;
 }
 
 // ================= SELECTOR MASTER =================
@@ -403,8 +445,6 @@ void setup() {
   pinMode(TRIGGER_HALL_PIN, INPUT);
   pinMode(SELECTOR_HALL_PIN, INPUT);
 
-  smoothedHall = analogRead(SELECTOR_HALL_PIN);
-  
   loadConfig();
 }
 

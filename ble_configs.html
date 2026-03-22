@@ -169,7 +169,7 @@
     <div id="live-box">
         <div class="live-grid">
             <div class="live-card"><label id="sel-label">Selector</label><div class="live-val" id="sel-state">—</div></div>
-            <div class="live-card"><label>Trigger</label><div class="live-val" id="trig-state">—</div></div>
+            <div class="live-card"><label id="trig-label">Trigger</label><div class="live-val" id="trig-state">—</div></div>
         </div>
     </div>
 
@@ -255,17 +255,23 @@ function setStatus(msg, state = "") {
     $("status-dot").className   = "status-dot" + (state ? ` ${state}` : "");
 }
 
-function setLiveState(sel, trig, rawHall) {
+function setLiveState(sel, trig, rawHall, rawTrigHall) {
     $("sel-state").textContent  = sel;
     $("trig-state").textContent = trig;
     $("trig-state").className   = "live-val" + (trig === "Fired" ? " fired" : "");
     
-    // Cập nhật label nếu có giá trị rawHall gửi kèm
     const label = $("sel-label");
     if (rawHall !== undefined) {
         label.textContent = `Selector (${rawHall})`;
     } else {
         label.textContent = "Selector";
+    }
+
+    const tlabel = $("trig-label");
+    if (rawTrigHall !== undefined) {
+        tlabel.textContent = `Trigger (${rawTrigHall})`;
+    } else {
+        tlabel.textContent = "Trigger";
     }
 }
 
@@ -432,7 +438,8 @@ function onStateChanged(event) {
     const sel = parts[0];
     const trig = parts[1];
     const rawHall = parts[2];
-    if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall);
+    const rawTrigHall = parts[3];
+    if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall, rawTrigHall);
 }
 
 
@@ -455,8 +462,8 @@ async function connectBLE() {
 
         setStatus("Syncing live states…", "connecting");
         const initRaw = await stateChar.readValue();
-        const [sel, trig, rawHall] = new TextDecoder().decode(initRaw).split(",");
-        if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall);
+        const [sel, trig, rawHall, rawTrigHall] = new TextDecoder().decode(initRaw).split(",");
+        if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall, rawTrigHall);
 
         await stateChar.startNotifications();
         stateChar.addEventListener("characteristicvaluechanged", onStateChanged);

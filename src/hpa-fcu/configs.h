@@ -20,12 +20,15 @@ const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds
 #define PWM_FREQ 20000 // 20kHz
 #define PWM_RES 8      // res 8-bit (0 - 255)
 
+// ===== TRIGGER CONFIGURATION =====
+#define USE_HALL_TRIGGER true
+
 // ===== SELECTOR CONFIGURATION =====
 // Set to true to use Hall sensor, false for traditional physical switches
 #define USE_HALL_SELECTOR true
-#define HALL_SELECTOR_SAFE_FACTOR 0.30
-#define HALL_SELECTOR_M1_FACTOR 0.35
-#define HALL_SELECTOR_M2_FACTOR 0.005
+
+#define HALL_FILTER_ALPHA 0.2f     // 0.1 > smoother, 0.3 > faster
+#define HALL_HYSTERESIS   30       // (tune 20–80)
 
 // ===== FIRING CONFIGURATION =====
 #define PROFILE_COUNT 5
