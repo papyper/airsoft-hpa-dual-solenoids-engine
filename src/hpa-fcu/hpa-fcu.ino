@@ -52,27 +52,32 @@ int sol2CurrentPwm = -1;
 bool hardwareLedState = false;
 
 // ===== TRIGGER DEBOUNCE =====
+bool physicalTriggerState = LOW;
 bool triggerState = LOW;
 bool lastTriggerState = LOW;
 bool triggerEdge = false;
 bool pendingReleaseFire = false; 
 uint32_t lastDebounce = 0;
-const uint32_t debounceDelay = 3000;
 
 // ===== SELECTOR (HALL & SWITCH) =====
 int selectorState = -1; // -1: safe, 0: mode 0, 1: mode 1
 
 // Hall Sensor Calibration Centers (Nearest Neighbor)
-int safeVal = 2400;
-int mode1Val = 2000;
-int mode2Val = 1500;
+int safeVal = DEF_HALL_SAFE;
+int mode1Val = DEF_HALL_MODE1;
+int mode2Val = DEF_HALL_MODE2;
+
+// ===== TRIGGER HALL CALIBRATION & STATE =====
+int trigIdleVal = DEF_TRIG_IDLE;
+int trigMaxVal = DEF_TRIG_MAX;
+int trigFirePct = DEF_TRIG_FIRE_PCT;
+int trigRelPct = DEF_TRIG_REL_PCT;
 
 // ===== CALIBRATION VARIABLES =====
 volatile int calibState = -1;
 volatile uint32_t calibStartTime = 0;
 volatile long calibSum = 0;
 volatile int calibSamples = 0;
-const uint32_t CALIB_DURATION = 5000;
 float filteredHall = 0;
 bool hallInitialized = false;
 
@@ -133,9 +138,14 @@ void loadConfig() {
   modeSlot[0] = prefs.getInt("slot0", 0);
   modeSlot[1] = prefs.getInt("slot1", 1);
 
-  safeVal = prefs.getInt("hs_val", 2400);
-  mode1Val = prefs.getInt("hm1_val", 2000);
-  mode2Val = prefs.getInt("hm2_val", 1500);
+  safeVal = prefs.getInt("hs_val", DEF_HALL_SAFE);
+  mode1Val = prefs.getInt("hm1_val", DEF_HALL_MODE1);
+  mode2Val = prefs.getInt("hm2_val", DEF_HALL_MODE2);
+
+  trigIdleVal = prefs.getInt("th_idle", DEF_TRIG_IDLE);
+  trigMaxVal = prefs.getInt("th_max", DEF_TRIG_MAX);
+  trigFirePct = prefs.getInt("th_fpct", DEF_TRIG_FIRE_PCT);
+  trigRelPct = prefs.getInt("th_rpct", DEF_TRIG_REL_PCT);
   
   prefs.end();
 }
@@ -160,11 +170,12 @@ void handleCalibration() {
   if (millis() - lastCalibRead < 10) return; // Sample every 10ms
   lastCalibRead = millis();
 
-  calibSum += analogRead(SELECTOR_HALL_PIN);
+  int pin = (calibState == 3 || calibState == 4) ? TRIGGER_HALL_PIN : SELECTOR_HALL_PIN;
+  calibSum += analogRead(pin);
   calibSamples++;
 
-  if (millis() - calibStartTime >= CALIB_DURATION) {
-    int finalVal = (calibSamples > 0) ? (calibSum / calibSamples) : analogRead(SELECTOR_HALL_PIN);
+  if (millis() - calibStartTime >= CALIB_DURATION_MS) {
+    int finalVal = (calibSamples > 0) ? (calibSum / calibSamples) : analogRead(pin);
 
     prefs.begin(PREF_NAME, false);
     if (calibState == 0) {
@@ -176,6 +187,12 @@ void handleCalibration() {
     } else if (calibState == 2) {
       mode2Val = finalVal;
       prefs.putInt("hm2_val", finalVal);
+    } else if (calibState == 3) {
+      trigIdleVal = finalVal;
+      prefs.putInt("th_idle", finalVal);
+    } else if (calibState == 4) {
+      trigMaxVal = finalVal;
+      prefs.putInt("th_max", finalVal);
     }
     prefs.end();
     
@@ -264,16 +281,11 @@ void readSelector() {
     if(safe) selectorState = -1;
     else selectorState = !digitalRead(MODE_PIN) ? 1 : 0;
   } else {
-    if (calibState != -1) {
-      handleCalibration();
-    } else {
-      handleSelectorNormal();
-    }
-    
+    handleSelectorNormal();
     safe = (selectorState == -1);
   }
 
-  if (safe && triggerState == HIGH) {
+  if (safe && physicalTriggerState == HIGH) {
     if (!safeHolding) {
       safeHolding = true;
       safeHoldStart = micros();
@@ -310,22 +322,63 @@ void setLED(bool on) {
 
 // ================= TRIGGER LOGIC =================
 void readTrigger() {
-  bool reading = !digitalRead(TRIGGER_PIN);
-  if (reading != lastTriggerState) lastDebounce = micros();
+  bool physicalReading = !digitalRead(TRIGGER_PIN);
   
-  if ((micros() - lastDebounce) > debounceDelay) {
-    if (reading != triggerState) {
-      bool risingEdge = (reading == HIGH && triggerState == LOW);
-      bool fallingEdge = (reading == LOW && triggerState == HIGH);
+  static bool lastPhysReading = LOW;
+  static uint32_t lastPhysDebounce = 0;
+  if (physicalReading != lastPhysReading) lastPhysDebounce = micros();
+  if ((micros() - lastPhysDebounce) > TRIGGER_DEBOUNCE_MICROS) {
+    physicalTriggerState = physicalReading;
+  }
+  lastPhysReading = physicalReading;
+
+  bool isPulled = false;
+
+  if (USE_HALL_TRIGGER) {
+    int rawHall = analogRead(TRIGGER_HALL_PIN);
+    static float filteredTrigHall = 0;
+    static bool trigHallInit = false;
+    if (!trigHallInit) { filteredTrigHall = rawHall; trigHallInit = true; }
+    else { filteredTrigHall = filteredTrigHall * (1.0f - TRIGGER_FILTER_ALPHA) + rawHall * TRIGGER_FILTER_ALPHA; }
+    
+    int hall = (int)filteredTrigHall;
+    
+    int range = trigMaxVal - trigIdleVal;
+    int pct = 0;
+    if (range != 0) {
+      pct = ((hall - trigIdleVal) * 100) / range;
+    }
+    
+    if (range < 0) { // reverse handling
+      pct = ((trigIdleVal - hall) * 100) / (-range);
+    }
+    
+    if (triggerState == LOW) {
+       if (pct >= trigFirePct) isPulled = true;
+       else isPulled = false;
+    } else {
+       if (pct <= trigRelPct) isPulled = false;
+       else isPulled = true;
+    }
+  } else {
+    isPulled = physicalTriggerState;
+  }
+
+  if (isPulled != lastTriggerState) lastDebounce = micros();
+  
+  if ((micros() - lastDebounce) > (USE_HALL_TRIGGER ? 0 : TRIGGER_DEBOUNCE_MICROS)) {
+    if (isPulled != triggerState) {
+      bool risingEdge = (isPulled == true && triggerState == false);
+      bool fallingEdge = (isPulled == false && triggerState == true);
       
-      triggerState = reading;
+      triggerState = isPulled;
       triggerEdge = risingEdge;
       
       if (fallingEdge) pendingReleaseFire = true;
       if (risingEdge) pendingReleaseFire = false; 
     }
   }
-  lastTriggerState = reading;
+  lastTriggerState = isPulled;
 }
 
 // ================= FIRING STATE MACHINE =================
@@ -449,6 +502,11 @@ void setup() {
 }
 
 void loop() {
+  if (calibState != -1) {
+    handleCalibration();
+    return;
+  }
+
   readTrigger();
   readSelector();
   updateLED();

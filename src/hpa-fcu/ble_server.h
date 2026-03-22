@@ -33,7 +33,8 @@ void updateConfigCharacteristic() {
                String(m.round_per_trigger) + "," + String(m.round_per_trigger_release) + "," +
                String(m.round_per_second);
     }
-    csv += "," + String(safeVal) + "," + String(mode1Val) + "," + String(mode2Val);
+    csv += "," + String(safeVal) + "," + String(mode1Val) + "," + String(mode2Val) + "," +
+           String(trigIdleVal) + "," + String(trigMaxVal) + "," + String(trigFirePct) + "," + String(trigRelPct);
            
     if(pConfigCharacteristic != NULL) {
         pConfigCharacteristic->setValue((uint8_t*)csv.c_str(), csv.length());
@@ -84,6 +85,12 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
                 prefs.putInt((p+"rptr").c_str(), getValue(value, ',', vIdx++).toInt());
                 prefs.putInt((p+"rps").c_str(), getValue(value, ',', vIdx++).toInt());
             }
+
+            int tf = getValue(value, ',', vIdx++).toInt();
+            int tr = getValue(value, ',', vIdx++).toInt();
+            if (tf > 0) prefs.putInt("th_fpct", tf); 
+            if (tr > 0) prefs.putInt("th_rpct", tr);
+
             prefs.end();
             loadConfig();
             updateConfigCharacteristic();
@@ -189,7 +196,9 @@ void sendCalibrationDoneBLE(int state) {
       String msg = "CAL_DONE," + String(state) + 
                    "," + String(safeVal) + 
                    "," + String(mode1Val) + 
-                   "," + String(mode2Val);
+                   "," + String(mode2Val) +
+                   "," + String(trigIdleVal) +
+                   "," + String(trigMaxVal);
                    
       pStateCharacteristic->setValue((uint8_t*)msg.c_str(), msg.length());
       pStateCharacteristic->notify();

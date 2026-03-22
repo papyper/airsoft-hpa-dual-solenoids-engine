@@ -14,21 +14,35 @@ const int TRIGGER_HALL_PIN = D1;
 const int SELECTOR_HALL_PIN = D2;
 
 // ===== CONFIGURATION MODE TOGGLE =====
-const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds
+const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds (micros)
 
 // ===== PWM CONFIGURATION (ESP32 Core v3.x.x API) =====
 #define PWM_FREQ 20000 // 20kHz
 #define PWM_RES 8      // res 8-bit (0 - 255)
 
-// ===== TRIGGER CONFIGURATION =====
-#define USE_HALL_TRIGGER true
+// ===== HARDWARE DEBOUNCE & TIMING =====
+#define TRIGGER_DEBOUNCE_MICROS 3000
+#define CALIB_DURATION_MS       5000
 
-// ===== SELECTOR CONFIGURATION =====
-// Set to true to use Hall sensor, false for traditional physical switches
+// ===== SELECTOR HALL CONFIGURATION =====
 #define USE_HALL_SELECTOR true
-
 #define HALL_FILTER_ALPHA 0.2f     // 0.1 > smoother, 0.3 > faster
 #define HALL_HYSTERESIS   30       // (tune 20–80)
+
+// Default Selector Hall Values (Nearest Neighbor)
+#define DEF_HALL_SAFE  2400
+#define DEF_HALL_MODE1 2000
+#define DEF_HALL_MODE2 1500
+
+// ===== TRIGGER HALL CONFIGURATION =====
+#define USE_HALL_TRIGGER true
+#define TRIGGER_FILTER_ALPHA 0.8f  // 0.8 > fast response for trigger
+
+// Default Trigger Hall Values
+#define DEF_TRIG_IDLE     2300
+#define DEF_TRIG_MAX      2600
+#define DEF_TRIG_FIRE_PCT 20
+#define DEF_TRIG_REL_PCT  10
 
 // ===== FIRING CONFIGURATION =====
 #define PROFILE_COUNT 5

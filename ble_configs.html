@@ -197,6 +197,33 @@
         </div>
 
         <div class="card">
+            <div class="card-title">Trigger Calibration (Hall Sensor)</div>
+            <p style="font-size:11px; color:var(--text-muted); margin-bottom:10px; font-family: var(--font-mono);">
+                Release the trigger to set Idle, pull fully to set Full.
+            </p>
+            <div style="display:flex; gap:8px; margin-bottom:10px; text-align: center;">
+                <div style="flex:1">
+                    <button class="btn btn-ghost" style="width:100%" id="calBtn3" onclick="sendCalibrate(3)">Set Idle</button>
+                    <div id="calRes3" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
+                </div>
+                <div style="flex:1">
+                    <button class="btn btn-ghost" style="width:100%" id="calBtn4" onclick="sendCalibrate(4)">Set Full</button>
+                    <div id="calRes4" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
+                </div>
+            </div>
+            <div class="fire-grid">
+                <div class="field-group">
+                    <label>Fire Threshold (%)</label>
+                    <input type="number" id="trig_fire_pct" min="0" max="100" placeholder="20">
+                </div>
+                <div class="field-group">
+                    <label>Release Threshold (%)</label>
+                    <input type="number" id="trig_rel_pct" min="0" max="100" placeholder="10">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
             <div class="card-title">Fire Mode</div>
             <div class="fire-grid">
                 <div class="field-group"><label>Mode 1</label><select id="slot0"></select></div>
@@ -336,7 +363,9 @@ function takeSnapshot() {
         $("slot1").value,
         ...Array.from({ length: PROFILE_COUNT }, (_, i) =>
             ALL_FIELDS.map(({ key }) => fel(i, key).value)
-        ).flat()
+        ).flat(),
+        $("trig_fire_pct").value,
+        $("trig_rel_pct").value
     ].join(",");
 }
 
@@ -347,7 +376,7 @@ function checkDirty() {
 }
 
 function attachChangeListeners() {
-    ["slot0", "slot1"].forEach(id => $(id).addEventListener("change", checkDirty));
+    ["slot0", "slot1", "trig_fire_pct", "trig_rel_pct"].forEach(id => $(id).addEventListener("change", checkDirty));
     for (let i = 0; i < PROFILE_COUNT; i++) {
         for (const { key } of ALL_FIELDS) {
             fel(i, key).addEventListener("input", checkDirty);
@@ -373,10 +402,16 @@ async function readConfigs() {
     }
 
     // Load calibration center values
-    if (vals.length >= idx + 3) {
+    if (vals.length >= idx + 7) {
         const r0 = $("calRes0"); if(r0) r0.textContent = `[ ${vals[idx]} ]`;
         const r1 = $("calRes1"); if(r1) r1.textContent = `[ ${vals[idx+1]} ]`;
         const r2 = $("calRes2"); if(r2) r2.textContent = `[ ${vals[idx+2]} ]`;
+        
+        const r3 = $("calRes3"); if(r3) r3.textContent = `[ ${vals[idx+3]} ]`;
+        const r4 = $("calRes4"); if(r4) r4.textContent = `[ ${vals[idx+4]} ]`;
+
+        const r5 = $("trig_fire_pct"); if(r5) r5.value = vals[idx+5];
+        const r6 = $("trig_rel_pct"); if(r6) r6.value = vals[idx+6];
     }
 
     savedSnapshot = takeSnapshot();
@@ -423,12 +458,14 @@ function onStateChanged(event) {
         const r0 = $("calRes0"); if(r0) r0.textContent = `[ ${parts[2]} ]`;
         const r1 = $("calRes1"); if(r1) r1.textContent = `[ ${parts[3]} ]`;
         const r2 = $("calRes2"); if(r2) r2.textContent = `[ ${parts[4]} ]`;
+        const r3 = $("calRes3"); if(r3) r3.textContent = `[ ${parts[5]} ]`;
+        const r4 = $("calRes4"); if(r4) r4.textContent = `[ ${parts[6]} ]`;
         
         const btn = $(`calBtn${stateIdx}`);
         if (btn) {
             btn.textContent = "✓ Set";
             setTimeout(() => { 
-                btn.textContent = stateIdx == 0 ? "Safe" : stateIdx == 1 ? "Mode 1" : "Mode 2"; 
+                btn.textContent = stateIdx == 0 ? "Safe" : stateIdx == 1 ? "Mode 1" : stateIdx == 2 ? "Mode 2" : stateIdx == 3 ? "Set Idle" : "Set Full"; 
                 btn.disabled = false; 
             }, 2000);
         }
@@ -491,7 +528,7 @@ async function sendCalibrate(stateIndex) {
     
     btn.textContent = "Calibrating...";
     btn.disabled = true;
-    res.textContent = "Hold selector...";
+    res.textContent = "Hold...";
 
     try {
         const cmd = "CAL," + stateIndex;
