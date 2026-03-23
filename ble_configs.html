@@ -3,248 +3,442 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PaPyPer HPA FCU BLE Configuration</title>
+    <title>PaPyPer HPA FCU</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --surface2: #21262d;
-            --border: #30363d;
-            --accent: #58a6ff;
-            --accent-green: #3fb950;
-            --accent-red: #f85149;
-            --accent-orange: #d29922;
-            --text: #e6edf3;
-            --text-muted: #8b949e;
-            --font-mono: 'Courier New', monospace;
+            --bg:        #080c10;
+            --bg2:       #0d1219;
+            --surface:   #111720;
+            --surface2:  #182030;
+            --border:    #1e2d42;
+            --border2:   #243548;
+            --accent:    #00b4ff;
+            --accent2:   #0077bb;
+            --green:     #00e676;
+            --red:       #ff3d5a;
+            --orange:    #ffa726;
+            --yellow:    #ffee00;
+            --text:      #dce8f5;
+            --text-dim:  #5e7a99;
+            --text-muted:#3a5570;
+            --mono:      'IBM Plex Mono', monospace;
+            --sans:      'IBM Plex Sans', sans-serif;
+            --glow:      0 0 20px rgba(0,180,255,0.15);
+            --glow-green:0 0 16px rgba(0,230,118,0.3);
         }
 
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: var(--sans);
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding: 16px 16px 100px;
+            padding: 0 0 100px;
         }
 
-        .container { max-width: 640px; margin: 0 auto; }
+        /* ─── Scanline overlay ─────────────────────── */
+        body::before {
+            content:'';
+            position:fixed; inset:0; z-index:999; pointer-events:none;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px);
+        }
 
-        /* Header */
+        .container { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+
+        /* ─── Header ──────────────────────────────────── */
         header {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 16px; padding-bottom: 14px;
+            padding: 18px 0 16px;
+            margin-bottom: 18px;
             border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 16px;
         }
-        .header-icon {
-            width: 34px; height: 34px; background: var(--accent);
-            border-radius: 8px; display: flex; align-items: center;
-            justify-content: center; font-size: 17px; flex-shrink: 0;
+        .logo {
+            width: 42px; height: 42px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            box-shadow: var(--glow);
         }
-        header h1 { font-size: 17px; font-weight: 600; }
-        header p  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+        .header-text h1 {
+            font-family: var(--mono);
+            font-size: 15px; font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent);
+        }
+        .header-text p {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        .header-spacer { flex: 1; }
+        .fw-tag {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            padding: 3px 8px;
+            letter-spacing: 1px;
+        }
 
-        /* Status Bar */
+        /* ─── Status Bar ──────────────────────────────── */
         .status-bar {
             display: flex; align-items: center; gap: 10px;
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 8px; padding: 9px 13px; margin-bottom: 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
         }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
-        .status-dot.connected  { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); animation: pulse 2s infinite; }
-        .status-dot.connecting { background: var(--accent-orange); animation: blink 0.7s infinite; }
-        @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
-        @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.2; } }
-        #status-msg { font-size: 12px; color: var(--text-muted); flex: 1; font-family: var(--font-mono); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; transition: background .3s; }
+        .status-dot.connected  { background: var(--green); box-shadow: var(--glow-green); animation: pulse-dot 2.5s infinite; }
+        .status-dot.connecting { background: var(--orange); animation: blink-dot 0.6s infinite; }
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+        @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.15} }
+        #status-msg { font-family: var(--mono); font-size: 11px; color: var(--text-dim); flex: 1; }
+        .btn-refresh {
+            display: none; padding: 5px 11px;
+            font-family: var(--mono); font-size: 11px; font-weight: 600;
+            border: 1px solid var(--border2); border-radius: 5px;
+            background: var(--surface2); color: var(--text-dim); cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+        .btn-refresh:hover { color: var(--accent); border-color: var(--accent); }
+        .btn-connect {
+            padding: 6px 14px;
+            font-family: var(--mono); font-size: 11px; font-weight: 700;
+            letter-spacing: 1px;
+            border: 1px solid var(--accent); border-radius: 5px;
+            background: rgba(0,180,255,.1); color: var(--accent); cursor: pointer;
+            transition: background .15s, box-shadow .15s;
+        }
+        .btn-connect:hover { background: rgba(0,180,255,.2); box-shadow: var(--glow); }
 
-        /* Buttons */
-        .btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s, transform .1s; }
-        .btn:active { transform: scale(.97); }
-        .btn:disabled { opacity: .4; cursor: not-allowed; }
-        .btn-primary { background: var(--accent); color: #0d1117; }
-        .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+        /* ─── Live State ──────────────────────────────── */
+        #live-box { display: none; margin-bottom: 14px; }
+        .live-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .live-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .live-icon { font-size: 18px; line-height: 1; opacity: .6; }
+        .live-card label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 3px; }
+        .live-val { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent); }
+        .live-val.fired { color: var(--red); text-shadow: 0 0 12px rgba(255,61,90,.5); }
 
-        /* Live States */
-        #live-box { display: none; }
-        .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-        .live-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px; }
-        .live-card label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); display: block; margin-bottom: 3px; }
-        .live-val { font-size: 15px; font-weight: 700; font-family: var(--font-mono); color: var(--accent); }
-        .live-val.fired { color: var(--accent-red); }
+        /* ─── Section Label ───────────────────────────── */
+        .section-label {
+            font-family: var(--mono); font-size: 9px; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 6px 0; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
 
-        /* Cards */
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
-        .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+        /* ─── Card ────────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 10px 14px 9px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-header-title {
+            font-family: var(--mono); font-size: 10px; font-weight: 700;
+            letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim);
+        }
+        .card-header-sub { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-left: auto; }
+        .card-body { padding: 14px; }
 
-        /* Fire Mode */
-        .fire-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        /* ─── Calibration ─────────────────────────────── */
+        .cal-hint { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+        .cal-btn-row { display: flex; gap: 8px; }
+        .cal-item { flex: 1; }
+        .btn-cal {
+            width: 100%; padding: 8px;
+            font-family: var(--mono); font-size: 11px; font-weight: 600;
+            background: var(--surface2); color: var(--text);
+            border: 1px solid var(--border2); border-radius: 6px;
+            cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+        }
+        .btn-cal:hover { border-color: var(--accent2); color: var(--accent); }
+        .btn-cal:disabled { opacity: .4; cursor: not-allowed; }
+        .cal-result { font-family: var(--mono); font-size: 10px; color: var(--green); text-align: center; margin-top: 5px; min-height: 16px; }
 
-        /* Inputs */
-        .field-group { display: flex; flex-direction: column; gap: 4px; }
-        .field-group label { font-size: 11px; color: var(--text-muted); }
-
-        select, input[type=number] {
-            background: var(--bg); color: var(--text);
-            border: 1px solid var(--border); border-radius: 6px;
-            padding: 7px 10px; font-size: 12px; width: 100%;
-            font-family: var(--font-mono);
+        /* ─── Field ───────────────────────────────────── */
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: .5px; }
+        input[type=number], select {
+            background: var(--bg2); color: var(--text);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-family: var(--mono); font-size: 12px; font-weight: 500;
+            width: 100%;
             -moz-appearance: textfield;
+            transition: border-color .15s;
         }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        input[type=number]:focus, select:focus { outline: none; border-color: var(--accent); }
         select {
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235e7a99'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
         }
-        select:focus, input[type=number]:focus { outline: none; border-color: var(--accent); }
 
-        /* Config form */
-        #config-form { display: none; }
+        /* ─── Fire Mode ───────────────────────────────── */
+        .fire-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* Tabs */
+        /* ─── Trigger thresholds ──────────────────────── */
+        .trig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+
+        /* ─── Tabs ────────────────────────────────────── */
         .tab-bar {
-            display: flex; gap: 4px; margin-bottom: 14px;
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 9px; padding: 4px;
+            display: flex; gap: 3px;
+            padding: 12px 14px 0;
         }
         .tab-btn {
-            flex: 1; padding: 7px 4px; font-size: 12px; font-weight: 600;
-            font-family: var(--font-mono); border: none; border-radius: 6px;
-            cursor: pointer; background: transparent; color: var(--text-muted); transition: .15s;
+            flex: 1; padding: 7px 4px;
+            font-family: var(--mono); font-size: 11px; font-weight: 600;
+            letter-spacing: .5px;
+            border: 1px solid var(--border2); border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            background: var(--bg2); color: var(--text-muted);
+            cursor: pointer; transition: color .15s, background .15s;
         }
-        .tab-btn:hover  { color: var(--text); background: var(--surface2); }
-        .tab-btn.active { background: var(--accent); color: #0d1117; }
+        .tab-btn:hover { color: var(--text); background: var(--surface2); }
+        .tab-btn.active { background: var(--surface2); color: var(--accent); border-color: var(--border2); }
 
-        .profile-panel         { display: none; }
-        .profile-panel.active  { display: block; }
+        .profile-panel { display: none; }
+        .profile-panel.active { display: block; }
 
-        /* Param Groups */
-        .pgroup { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
-        .pgroup:last-child { margin-bottom: 0; }
-        .pgroup-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface2); }
-        .pgroup-dot    { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .pgroup-dot.sol1 { background: #f85149; }
-        .pgroup-dot.sol2 { background: #3fb950; }
-        .pgroup-dot.rnd  { background: #d29922; }
-        .pgroup-label  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); }
-        .pgroup-body   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
-        .pgroup-body.three-col { grid-template-columns: 1fr 1fr 1fr; }
+        /* ─── Profile panels layout ───────────────────── */
+        .panel-inner {
+            padding: 14px;
+            border-top: 1px solid var(--border2);
+            background: var(--surface2);
+            border-radius: 0 0 10px 10px;
+        }
 
-        /* Sticky Save Bar */
+        /* Overview card inside profile */
+        .overview-strip {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;
+        }
+        .ov-item { }
+        .ov-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+        .ov-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--yellow); }
+        .ov-val.mode-semi  { color: var(--green); }
+        .ov-val.mode-full  { color: var(--red); }
+        .ov-val.mode-burst { color: var(--orange); }
+
+        /* Solenoid side-by-side */
+        .sol-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .sol-block {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .sol-block-header {
+            padding: 7px 12px;
+            display: flex; align-items: center; gap: 7px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sol-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .sol-dot.s1 { background: #ff3d5a; box-shadow: 0 0 6px #ff3d5a66; }
+        .sol-dot.s2 { background: #00e676; box-shadow: 0 0 6px #00e67666; }
+        .sol-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); }
+        .sol-block-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Rounds block */
+        .rnd-block {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .rnd-block-header {
+            padding: 7px 12px;
+            display: flex; align-items: center; gap: 7px;
+            border-bottom: 1px solid var(--border);
+        }
+        .rnd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 6px #ffa72666; }
+        .rnd-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); }
+        .rnd-block-body { padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+        /* ─── Divider ─────────────────────────────────── */
+        .vdivider { width: 1px; background: var(--border); }
+
+        /* ─── Save Bar ────────────────────────────────── */
         .save-bar {
+            display: none;
             position: fixed; bottom: 0; left: 0; right: 0;
-            padding: 12px 16px; background: var(--bg);
-            border-top: 1px solid var(--border); z-index: 99;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            z-index: 99;
         }
-        .save-bar-inner { max-width: 640px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+        .save-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+        .save-hint { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+        .badge-unsaved {
+            background: var(--orange); color: #000;
+            font-family: var(--mono); font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 4px; letter-spacing: 1px;
+        }
         .btn-save {
-            flex: 1; padding: 11px; background: var(--accent-green); color: #0d1117;
-            border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer;
+            flex: 1; padding: 11px;
+            font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+            background: var(--green); color: #000;
+            border: none; border-radius: 7px; cursor: pointer;
             transition: opacity .15s;
         }
         .btn-save:disabled { opacity: .4; cursor: not-allowed; }
-        .save-hint  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
-        .badge      { background: var(--accent-orange); color: #0d1117; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); }
+
+        /* ─── Hidden ──────────────────────────────────── */
+        #config-form { display: none; }
     </style>
 </head>
 <body>
 <div class="container">
 
     <header>
-        <div class="header-icon">⚡</div>
-        <div>
-            <h1>PaPyPer HPA FCU</h1>
-            <p>Bluetooth Configuration Panel</p>
+        <div class="logo">⚡</div>
+        <div class="header-text">
+            <h1>PAPYPER FCU</h1>
+            <p>HPA FIRE CONTROL UNIT · BLE CONFIG</p>
         </div>
+        <div class="header-spacer"></div>
+        <div class="fw-tag">v1.0</div>
     </header>
 
+    <!-- Status -->
     <div class="status-bar">
         <div class="status-dot" id="status-dot"></div>
         <span id="status-msg">Not Connected</span>
-        <button class="btn btn-ghost" id="refreshBtn" style="display:none" onclick="readConfigs()">↺ Refresh</button>
-        <button class="btn btn-primary" id="connectBtn" onclick="connectBLE()">Connect</button>
+        <button class="btn-refresh" id="refreshBtn" onclick="readConfigs()">↺ Refresh</button>
+        <button class="btn-connect" id="connectBtn" onclick="connectBLE()">CONNECT</button>
     </div>
 
+    <!-- Live State -->
     <div id="live-box">
-        <div class="live-grid">
-            <div class="live-card"><label id="sel-label">Selector</label><div class="live-val" id="sel-state">—</div></div>
-            <div class="live-card"><label id="trig-label">Trigger</label><div class="live-val" id="trig-state">—</div></div>
+        <div class="live-row">
+            <div class="live-card">
+                <div class="live-icon">🎯</div>
+                <div>
+                    <label id="sel-label">SELECTOR</label>
+                    <div class="live-val" id="sel-state">—</div>
+                </div>
+            </div>
+            <div class="live-card">
+                <div class="live-icon">🔫</div>
+                <div>
+                    <label id="trig-label">TRIGGER</label>
+                    <div class="live-val" id="trig-state">—</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="config-form">
 
+        <!-- Selector Calibration -->
+        <div class="section-label">Selector Calibration</div>
         <div class="card" style="margin-bottom:12px">
-            <div class="card-title">Selector Calibration (Hall Sensor)</div>
-            <p style="font-size:11px; color:var(--text-muted); margin-bottom:10px; font-family: var(--font-mono);">
-                Move your physical selector to the desired position, then press the corresponding button below.
-            </p>
-            <div style="display:flex; gap:8px; text-align: center;">
-                <div style="flex:1">
-                    <button class="btn btn-ghost" style="width:100%" id="calBtn0" onclick="sendCalibrate(0)">Safe</button>
-                    <div id="calRes0" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
-                </div>
-                <div style="flex:1">
-                    <button class="btn btn-ghost" style="width:100%" id="calBtn1" onclick="sendCalibrate(1)">Mode 1</button>
-                    <div id="calRes1" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
-                </div>
-                <div style="flex:1">
-                    <button class="btn btn-ghost" style="width:100%" id="calBtn2" onclick="sendCalibrate(2)">Mode 2</button>
-                    <div id="calRes2" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Trigger Calibration (Hall Sensor)</div>
-            <p style="font-size:11px; color:var(--text-muted); margin-bottom:10px; font-family: var(--font-mono);">
-                Release the trigger to set Idle, pull fully to set Full.
-            </p>
-            <div style="display:flex; gap:8px; margin-bottom:10px; text-align: center;">
-                <div style="flex:1">
-                    <button class="btn btn-ghost" style="width:100%" id="calBtn3" onclick="sendCalibrate(3)">Set Idle</button>
-                    <div id="calRes3" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
-                </div>
-                <div style="flex:1">
-                    <button class="btn btn-ghost" style="width:100%" id="calBtn4" onclick="sendCalibrate(4)">Set Full</button>
-                    <div id="calRes4" style="font-size:10px; color:var(--accent-green); margin-top:4px; font-family: var(--font-mono); min-height: 15px;"></div>
-                </div>
-            </div>
-            <div class="fire-grid">
-                <div class="field-group">
-                    <label>Fire Threshold (%)</label>
-                    <input type="number" id="trig_fire_pct" min="0" max="100" placeholder="20">
-                </div>
-                <div class="field-group">
-                    <label>Release Threshold (%)</label>
-                    <input type="number" id="trig_rel_pct" min="0" max="100" placeholder="10">
+            <div class="card-body">
+                <p class="cal-hint">Move selector to position → press button to capture Hall sensor value.</p>
+                <div class="cal-btn-row">
+                    <div class="cal-item">
+                        <button class="btn-cal" id="calBtn0" onclick="sendCalibrate(0)">SAFE</button>
+                        <div class="cal-result" id="calRes0"></div>
+                    </div>
+                    <div class="cal-item">
+                        <button class="btn-cal" id="calBtn1" onclick="sendCalibrate(1)">MODE 1</button>
+                        <div class="cal-result" id="calRes1"></div>
+                    </div>
+                    <div class="cal-item">
+                        <button class="btn-cal" id="calBtn2" onclick="sendCalibrate(2)">MODE 2</button>
+                        <div class="cal-result" id="calRes2"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-title">Fire Mode</div>
-            <div class="fire-grid">
-                <div class="field-group"><label>Mode 1</label><select id="slot0"></select></div>
-                <div class="field-group"><label>Mode 2</label><select id="slot1"></select></div>
+        <!-- Trigger Calibration -->
+        <div class="section-label">Trigger Calibration</div>
+        <div class="card" style="margin-bottom:12px">
+            <div class="card-body">
+                <p class="cal-hint">Release trigger → Set Idle. Pull fully → Set Full.</p>
+                <div class="cal-btn-row" style="margin-bottom:0">
+                    <div class="cal-item">
+                        <button class="btn-cal" id="calBtn3" onclick="sendCalibrate(3)">SET IDLE</button>
+                        <div class="cal-result" id="calRes3"></div>
+                    </div>
+                    <div class="cal-item">
+                        <button class="btn-cal" id="calBtn4" onclick="sendCalibrate(4)">SET FULL</button>
+                        <div class="cal-result" id="calRes4"></div>
+                    </div>
+                </div>
+                <div class="trig-row">
+                    <div class="field">
+                        <label>Fire Threshold (%)</label>
+                        <input type="number" id="trig_fire_pct" min="0" max="100" placeholder="20">
+                    </div>
+                    <div class="field">
+                        <label>Release Threshold (%)</label>
+                        <input type="number" id="trig_rel_pct" min="0" max="100" placeholder="10">
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="card" style="padding-bottom:6px">
-            <div class="card-title">Profiles</div>
+        <!-- Fire Mode -->
+        <div class="section-label">Fire Mode Assignment</div>
+        <div class="card" style="margin-bottom:12px">
+            <div class="card-body">
+                <div class="fire-row">
+                    <div class="field"><label>Mode 1 → Profile</label><select id="slot0"></select></div>
+                    <div class="field"><label>Mode 2 → Profile</label><select id="slot1"></select></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profiles -->
+        <div class="section-label">Profiles</div>
+        <div class="card" style="padding-bottom: 0">
             <div class="tab-bar" id="tabBar"></div>
             <div id="profiles-container"></div>
         </div>
 
     </div>
-
 </div>
 
-<div class="save-bar" id="save-bar" style="display:none">
-    <div class="save-bar-inner">
+<!-- Save Bar -->
+<div class="save-bar" id="save-bar">
+    <div class="save-inner">
         <span class="save-hint" id="save-hint"></span>
-        <button class="btn-save" id="saveBtn" onclick="saveConfigs()">Save Configuration</button>
+        <button class="btn-save" id="saveBtn" onclick="saveConfigs()">SAVE CONFIGURATION</button>
     </div>
 </div>
 
@@ -274,81 +468,161 @@ const ROUND_FIELDS = [
 ];
 const ALL_FIELDS = [...SOL1_FIELDS, ...SOL2_FIELDS, ...ROUND_FIELDS];
 
-// ─── DOM ─────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
+// ─── Status ───────────────────────────────────────────────────────────────────
 function setStatus(msg, state = "") {
     $("status-msg").textContent = msg;
-    $("status-dot").className   = "status-dot" + (state ? ` ${state}` : "");
+    $("status-dot").className = "status-dot" + (state ? ` ${state}` : "");
 }
 
 function setLiveState(sel, trig, rawHall, rawTrigHall) {
     $("sel-state").textContent  = sel;
     $("trig-state").textContent = trig;
     $("trig-state").className   = "live-val" + (trig === "Fired" ? " fired" : "");
-    
-    const label = $("sel-label");
-    if (rawHall !== undefined) {
-        label.textContent = `Selector (${rawHall})`;
-    } else {
-        label.textContent = "Selector";
-    }
-
-    const tlabel = $("trig-label");
-    if (rawTrigHall !== undefined) {
-        tlabel.textContent = `Trigger (${rawTrigHall})`;
-    } else {
-        tlabel.textContent = "Trigger";
-    }
+    $("sel-label").textContent  = rawHall !== undefined ? `SELECTOR (${rawHall})` : "SELECTOR";
+    $("trig-label").textContent = rawTrigHall !== undefined ? `TRIGGER (${rawTrigHall})` : "TRIGGER";
 }
 
+// ─── Field helpers ───────────────────────────────────────────────────────────
 function fid(pi, key) { return `p${pi}_${key}`; }
 function fel(pi, key) { return $(fid(pi, key)); }
 
-// ─── Build UI ────────────────────────────────────────────────────────────────
+// ─── Build UI ─────────────────────────────────────────────────────────────────
 function buildUI() {
-    // Slot selects
     const opts = Array.from({ length: PROFILE_COUNT }, (_, i) =>
         `<option value="${i}">Profile ${i + 1}</option>`).join("");
     $("slot0").innerHTML = opts;
     $("slot1").innerHTML = opts;
 
-    // Tabs
     $("tabBar").innerHTML = Array.from({ length: PROFILE_COUNT }, (_, i) =>
         `<button class="tab-btn${i === 0 ? " active" : ""}" onclick="switchTab(${i})">P${i + 1}</button>`
     ).join("");
 
-    // Profile panels
     $("profiles-container").innerHTML = Array.from({ length: PROFILE_COUNT }, (_, i) =>
         `<div id="panel${i}" class="profile-panel${i === 0 ? " active" : ""}">
-            ${buildGroup(i, "sol1", "Solenoid 1", SOL1_FIELDS, "1fr 1fr")}
-            ${buildGroup(i, "sol2", "Solenoid 2", SOL2_FIELDS, "1fr 1fr")}
-            ${buildGroup(i, "rnd",  "Rounds",     ROUND_FIELDS, "1fr 1fr 1fr")}
+            <div class="panel-inner">
+
+                <!-- Overview -->
+                <div class="overview-strip" id="overview_${i}">
+                    <div class="ov-item">
+                        <div class="ov-label">Ms / Shot</div>
+                        <div class="ov-val" id="ov_ms_${i}">—</div>
+                    </div>
+                    <div class="ov-item">
+                        <div class="ov-label">Max RPS</div>
+                        <div class="ov-val" id="ov_rps_${i}">—</div>
+                    </div>
+                    <div class="ov-item">
+                        <div class="ov-label">Fire Mode</div>
+                        <div class="ov-val" id="ov_mode_${i}">—</div>
+                    </div>
+                    <div class="ov-item">
+                        <div class="ov-label">Binary Trigger</div>
+                        <div class="ov-val" id="ov_btrig_${i}">—</div>
+                    </div>
+                </div>
+
+                <!-- Solenoid side-by-side -->
+                <div class="sol-row">
+                    <div class="sol-block">
+                        <div class="sol-block-header">
+                            <div class="sol-dot s1"></div>
+                            <span class="sol-block-title">SOLENOID 1</span>
+                        </div>
+                        <div class="sol-block-body">
+                            ${SOL1_FIELDS.map(({key, label, min, max}) => {
+                                const extra = min !== undefined ? `min="${min}" max="${max}"` : "";
+                                return `<div class="field"><label>${label}</label><input type="number" id="${fid(i,key)}" ${extra}></div>`;
+                            }).join("")}
+                        </div>
+                    </div>
+                    <div class="sol-block">
+                        <div class="sol-block-header">
+                            <div class="sol-dot s2"></div>
+                            <span class="sol-block-title">SOLENOID 2</span>
+                        </div>
+                        <div class="sol-block-body">
+                            ${SOL2_FIELDS.map(({key, label, min, max}) => {
+                                const extra = min !== undefined ? `min="${min}" max="${max}"` : "";
+                                return `<div class="field"><label>${label}</label><input type="number" id="${fid(i,key)}" ${extra}></div>`;
+                            }).join("")}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rounds -->
+                <div class="rnd-block" style="margin-top:10px">
+                    <div class="rnd-block-header">
+                        <div class="rnd-dot"></div>
+                        <span class="rnd-block-title">ROUNDS</span>
+                    </div>
+                    <div class="rnd-block-body">
+                        ${ROUND_FIELDS.map(({key, label}) =>
+                            `<div class="field"><label>${label}</label><input type="number" id="${fid(i,key)}"></div>`
+                        ).join("")}
+                    </div>
+                </div>
+
+            </div>
         </div>`
     ).join("");
-}
-
-function buildGroup(pi, dotClass, title, fields, cols) {
-    const inputs = fields.map(({ key, label, min, max }) => {
-        const extra = (min !== undefined) ? `min="${min}" max="${max}"` : "";
-        return `<div class="field-group">
-            <label>${label}</label>
-            <input type="number" id="${fid(pi, key)}" ${extra}>
-        </div>`;
-    }).join("");
-    return `
-    <div class="pgroup">
-        <div class="pgroup-header">
-            <div class="pgroup-dot ${dotClass}"></div>
-            <span class="pgroup-label">${title}</span>
-        </div>
-        <div class="pgroup-body" style="grid-template-columns:${cols}">${inputs}</div>
-    </div>`;
 }
 
 function switchTab(i) {
     document.querySelectorAll(".tab-btn").forEach((b, j) => b.classList.toggle("active", j === i));
     document.querySelectorAll(".profile-panel").forEach((p, j) => p.classList.toggle("active", j === i));
+}
+
+// ─── Overview updater ────────────────────────────────────────────────────────
+function updateOverview() {
+    for (let i = 0; i < PROFILE_COUNT; i++) {
+        // Timing
+        const s1 = parseInt(fel(i, "s1").value) || 0;
+        const d1 = parseInt(fel(i, "d1").value) || 0;
+        const s2 = parseInt(fel(i, "s2").value) || 0;
+        const d2 = parseInt(fel(i, "d2").value) || 0;
+        const totalUs = s1 + d1 + s2 + d2;
+
+        const msEl  = $(`ov_ms_${i}`);
+        const rpsEl = $(`ov_rps_${i}`);
+        if (totalUs > 0) {
+            msEl.textContent  = (totalUs / 1000).toFixed(1) + " ms";
+            rpsEl.textContent = Math.floor(1000000 / totalUs);
+        } else {
+            msEl.textContent  = "—";
+            rpsEl.textContent = "—";
+        }
+
+        // Fire mode from Per Pull
+        const rpt = parseInt(fel(i, "rpt").value);
+        const modeEl = $(`ov_mode_${i}`);
+        modeEl.className = "ov-val";
+        if (isNaN(rpt) || fel(i, "rpt").value === "") {
+            modeEl.textContent = "—";
+        } else if (rpt === 1) {
+            modeEl.textContent = "SEMI";
+            modeEl.classList.add("mode-semi");
+        } else if (rpt === -1) {
+            modeEl.textContent = "FULL AUTO";
+            modeEl.classList.add("mode-full");
+        } else {
+            modeEl.textContent = `BURST ×${rpt}`;
+            modeEl.classList.add("mode-burst");
+        }
+        // Binary Trigger
+        const rptr = parseInt(fel(i, "rptr").value);
+        const btrigEl = $(`ov_btrig_${i}`);
+        btrigEl.className = "ov-val";
+        btrigEl.style.color = "";
+        if (!isNaN(rptr) && rptr > 0) {
+            btrigEl.textContent = "ENABLED";
+            btrigEl.classList.add("mode-semi");
+        } else {
+            btrigEl.textContent = "DISABLED";
+            btrigEl.style.color = "var(--text-muted)";
+        }
+    }
 }
 
 // ─── BLE State ───────────────────────────────────────────────────────────────
@@ -370,9 +644,10 @@ function takeSnapshot() {
 }
 
 function checkDirty() {
+    updateOverview();
     if (!savedSnapshot) return;
     const dirty = takeSnapshot() !== savedSnapshot;
-    $("save-hint").innerHTML = dirty ? `<span class="badge">UNSAVED</span>` : "";
+    $("save-hint").innerHTML = dirty ? `<span class="badge-unsaved">UNSAVED</span>` : "";
 }
 
 function attachChangeListeners() {
@@ -384,13 +659,13 @@ function attachChangeListeners() {
     }
 }
 
-// ─── BLE Read / Write ─────────────────────────────────────────────────────────
+// ─── BLE Read / Write ────────────────────────────────────────────────────────
 async function readConfigs() {
-    setStatus("Reading configs...", "connecting");
+    setStatus("Reading configs…", "connecting");
     const raw  = await configChar.readValue();
     const vals = new TextDecoder().decode(raw).split(",");
-
     if (vals.length < 2) return;
+
     $("slot0").value = vals[0];
     $("slot1").value = vals[1];
 
@@ -401,19 +676,17 @@ async function readConfigs() {
         }
     }
 
-    // Load calibration center values
     if (vals.length >= idx + 7) {
         const r0 = $("calRes0"); if(r0) r0.textContent = `[ ${vals[idx]} ]`;
         const r1 = $("calRes1"); if(r1) r1.textContent = `[ ${vals[idx+1]} ]`;
         const r2 = $("calRes2"); if(r2) r2.textContent = `[ ${vals[idx+2]} ]`;
-        
         const r3 = $("calRes3"); if(r3) r3.textContent = `[ ${vals[idx+3]} ]`;
         const r4 = $("calRes4"); if(r4) r4.textContent = `[ ${vals[idx+4]} ]`;
-
         const r5 = $("trig_fire_pct"); if(r5) r5.value = vals[idx+5];
         const r6 = $("trig_rel_pct"); if(r6) r6.value = vals[idx+6];
     }
 
+    updateOverview();
     savedSnapshot = takeSnapshot();
     $("save-hint").innerHTML = "";
     setStatus("Connected & Ready", "connected");
@@ -421,20 +694,19 @@ async function readConfigs() {
 
 async function saveConfigs() {
     const btn = $("saveBtn");
-    btn.textContent = "Saving…";
-    btn.disabled    = true;
-
+    btn.textContent = "SAVING…";
+    btn.disabled = true;
     try {
         const csv = takeSnapshot();
         await configChar.writeValueWithResponse(new TextEncoder().encode(csv));
         savedSnapshot = csv;
         $("save-hint").innerHTML = "";
-        btn.textContent = "✓ Saved!";
+        btn.textContent = "✓ SAVED!";
     } catch (err) {
         console.error(err);
-        btn.textContent = "Error Saving";
+        btn.textContent = "ERROR SAVING";
     } finally {
-        setTimeout(() => { btn.textContent = "Save Configuration"; btn.disabled = false; }, 2000);
+        setTimeout(() => { btn.textContent = "SAVE CONFIGURATION"; btn.disabled = false; }, 2000);
     }
 }
 
@@ -451,34 +723,27 @@ function onDisconnect() {
 function onStateChanged(event) {
     const rawData = new TextDecoder().decode(event.target.value);
     const parts = rawData.split(",");
-
     if (parts[0] === "CAL_DONE") {
         const stateIdx = parts[1];
-        
         const r0 = $("calRes0"); if(r0) r0.textContent = `[ ${parts[2]} ]`;
         const r1 = $("calRes1"); if(r1) r1.textContent = `[ ${parts[3]} ]`;
         const r2 = $("calRes2"); if(r2) r2.textContent = `[ ${parts[4]} ]`;
         const r3 = $("calRes3"); if(r3) r3.textContent = `[ ${parts[5]} ]`;
         const r4 = $("calRes4"); if(r4) r4.textContent = `[ ${parts[6]} ]`;
-        
         const btn = $(`calBtn${stateIdx}`);
         if (btn) {
-            btn.textContent = "✓ Set";
-            setTimeout(() => { 
-                btn.textContent = stateIdx == 0 ? "Safe" : stateIdx == 1 ? "Mode 1" : stateIdx == 2 ? "Mode 2" : stateIdx == 3 ? "Set Idle" : "Set Full"; 
-                btn.disabled = false; 
+            btn.textContent = "✓ SET";
+            setTimeout(() => {
+                const labels = ["SAFE","MODE 1","MODE 2","SET IDLE","SET FULL"];
+                btn.textContent = labels[stateIdx] ?? "SET";
+                btn.disabled = false;
             }, 2000);
         }
         return;
     }
-
-    const sel = parts[0];
-    const trig = parts[1];
-    const rawHall = parts[2];
-    const rawTrigHall = parts[3];
+    const [sel, trig, rawHall, rawTrigHall] = parts;
     if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall, rawTrigHall);
 }
-
 
 async function connectBLE() {
     try {
@@ -511,49 +776,36 @@ async function connectBLE() {
         $("save-bar").style.display    = "block";
         $("refreshBtn").style.display  = "block";
         $("connectBtn").style.display  = "none";
-
     } catch (err) {
         console.error(err);
         setStatus("Connection failed. See console.", "");
     }
 }
 
-// ─── BLE Calibrate Hall ──────────────────────────────────────────────────────
+// ─── Calibrate ───────────────────────────────────────────────────────────────
 async function sendCalibrate(stateIndex) {
     if (!configChar) return alert("Connect BLE first!");
-    
     const btn = $(`calBtn${stateIndex}`);
     const res = $(`calRes${stateIndex}`);
-    const originalText = btn.textContent;
-    
-    btn.textContent = "Calibrating...";
-    btn.disabled = true;
-    res.textContent = "Hold...";
-
+    const original = btn.textContent;
+    btn.textContent = "CALIBRATING…"; btn.disabled = true;
+    res.textContent = "Hold…";
     try {
-        const cmd = "CAL," + stateIndex;
-        await configChar.writeValueWithResponse(new TextEncoder().encode(cmd));
-        
+        await configChar.writeValueWithResponse(new TextEncoder().encode("CAL," + stateIndex));
         setTimeout(() => {
-            if (btn.disabled && btn.textContent === "Calibrating...") {
-                btn.textContent = "Timeout";
-                res.textContent = "Failed";
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }, 2000);
+            if (btn.disabled && btn.textContent === "CALIBRATING…") {
+                btn.textContent = "TIMEOUT"; res.textContent = "Failed";
+                setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
             }
         }, 7000);
-
     } catch(e) {
         console.error(e);
-        btn.textContent = "Error";
-        res.textContent = "Failed";
-        setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 2000);
+        btn.textContent = "ERROR"; res.textContent = "Failed";
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
     }
 }
 
-// ─── Init ────────────────────────────────────────────────────────────────────
+// ─── Init ─────────────────────────────────────────────────────────────────────
 buildUI();
 attachChangeListeners();
 </script>
