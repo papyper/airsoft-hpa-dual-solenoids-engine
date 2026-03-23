@@ -110,13 +110,16 @@ class ServerCallbacks: public NimBLEServerCallbacks {
   }
 };
 
+ConfigCallbacks configCallbacksInst;
+ServerCallbacks serverCallbacksInst;
+
 void startBLE() {
   NimBLEDevice::init(BLE_NAME);
   NimBLEDevice::setMTU(512);
   NimBLEDevice::setPower(ESP_PWR_LVL_P9); 
 
   pServer = NimBLEDevice::createServer();
-  pServer->setCallbacks(new ServerCallbacks());
+  pServer->setCallbacks(&serverCallbacksInst);
 
   NimBLEService *pService = pServer->createService(SERVICE_UUID);
 
@@ -125,7 +128,7 @@ void startBLE() {
                              NIMBLE_PROPERTY::READ |
                              NIMBLE_PROPERTY::WRITE
                            );
-  pConfigCharacteristic->setCallbacks(new ConfigCallbacks());
+  pConfigCharacteristic->setCallbacks(&configCallbacksInst);
 
   pStateCharacteristic = pService->createCharacteristic(
                              STATE_CHAR_UUID,

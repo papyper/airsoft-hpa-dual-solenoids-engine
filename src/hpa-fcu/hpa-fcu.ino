@@ -78,7 +78,7 @@ volatile int calibState = -1;
 volatile uint32_t calibStartTime = 0;
 volatile long calibSum = 0;
 volatile int calibSamples = 0;
-float filteredHall = 0;
+int filteredHall = 0;
 bool hallInitialized = false;
 
 // ===== LED TIMERS =====
@@ -201,6 +201,8 @@ void handleCalibration() {
     int lastState = calibState;
     calibState = -1;
 
+    safeHolding = false;
+
     updateConfigCharacteristic();
     sendCalibrationDoneBLE(lastState);
   }
@@ -210,15 +212,15 @@ void handleCalibration() {
 void handleSelectorNormal() {
   int raw = analogRead(SELECTOR_HALL_PIN);
 
-  // ===== FILTER (EMA) =====
+  // ===== FILTER (EMA - Integer Math) =====
   if (!hallInitialized) {
     filteredHall = raw;
     hallInitialized = true;
   } else {
-    filteredHall = filteredHall * (1.0f - HALL_FILTER_ALPHA) + raw * HALL_FILTER_ALPHA;
+    filteredHall = (filteredHall * 3 + raw) / 4; // Alpha 0.25
   }
 
-  int hall = (int)filteredHall;
+  int hall = filteredHall;
 
   // ===== SORT VALUES =====
   int v0 = safeVal;
@@ -277,9 +279,9 @@ void readSelector() {
   bool safe = false;
 
   if (!USE_HALL_SELECTOR) {
-    safe = !digitalRead(SAFE_PIN) == LOW;
+    safe = (digitalRead(SAFE_PIN) == LOW);
     if(safe) selectorState = -1;
-    else selectorState = !digitalRead(MODE_PIN) ? 1 : 0;
+    else selectorState = (digitalRead(MODE_PIN) == LOW) ? 1 : 0;
   } else {
     handleSelectorNormal();
     safe = (selectorState == -1);
@@ -336,12 +338,12 @@ void readTrigger() {
 
   if (USE_HALL_TRIGGER) {
     int rawHall = analogRead(TRIGGER_HALL_PIN);
-    static float filteredTrigHall = 0;
+    static int filteredTrigHall = 0;
     static bool trigHallInit = false;
     if (!trigHallInit) { filteredTrigHall = rawHall; trigHallInit = true; }
-    else { filteredTrigHall = filteredTrigHall * (1.0f - TRIGGER_FILTER_ALPHA) + rawHall * TRIGGER_FILTER_ALPHA; }
+    else { filteredTrigHall = (filteredTrigHall * 3 + rawHall * 1) / 4; }
     
-    int hall = (int)filteredTrigHall;
+    int hall = filteredTrigHall;
     
     int range = trigMaxVal - trigIdleVal;
     int pct = 0;
@@ -366,7 +368,7 @@ void readTrigger() {
 
   if (isPulled != lastTriggerState) lastDebounce = micros();
   
-  if ((micros() - lastDebounce) > (USE_HALL_TRIGGER ? 0 : TRIGGER_DEBOUNCE_MICROS)) {
+  if ((micros() - lastDebounce) > TRIGGER_DEBOUNCE_MICROS) {
     if (isPulled != triggerState) {
       bool risingEdge = (isPulled == true && triggerState == false);
       bool fallingEdge = (isPulled == false && triggerState == true);
