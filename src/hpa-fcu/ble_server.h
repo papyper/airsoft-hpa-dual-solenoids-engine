@@ -150,11 +150,19 @@ void startBLE() {
 }
 
 void stopBLE() {
-  if (pServer != NULL) {
-    NimBLEDevice::deinit(true);
-  }
   configActive = false;
   deviceConnected = false;
+
+  setLED(false);
+  logicalLedState = false;
+  ledBlinkCount = 0;
+
+  if (pServer != NULL) {
+    NimBLEDevice::deinit(true);
+    pServer = NULL;
+    pConfigCharacteristic = NULL;
+    pStateCharacteristic = NULL;
+  }
 }
 
 void sendLiveStatesBLE() {

@@ -26,8 +26,9 @@ const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds (micros)
 
 // ===== SELECTOR HALL CONFIGURATION =====
 #define USE_HALL_SELECTOR true
-#define HALL_FILTER_ALPHA 0.2f     // 0.1 > smoother, 0.3 > faster
-#define HALL_HYSTERESIS   30       // (tune 20–80)
+
+#define SELECTOR_HYST_LIGHT 80
+#define SELECTOR_HYST_HEAVY 350
 
 // Default Selector Hall Values (Nearest Neighbor)
 #define DEF_HALL_SAFE  2400

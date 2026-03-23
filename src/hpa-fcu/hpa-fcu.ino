@@ -45,6 +45,9 @@ FCUState fcuState = S_IDLE;
 uint32_t tStart = 0;
 FireMode* currentMode;
 int shotsRemaining = 0;
+int trigFireThreshold = 0;
+int trigRelThreshold = 0;
+bool trigInverted = false;
 
 // ===== HARDWARE OUTPUT CACHE =====
 int sol1CurrentPwm = -1; 
@@ -114,6 +117,37 @@ void precalcProfile(FireMode& m) {
   m.t_cycle_end = t;
 }
 
+void precalcTrigger() {
+  int range = trigMaxVal - trigIdleVal;
+  trigInverted = (range < 0);
+  
+  trigFireThreshold = trigIdleVal + (range * trigFirePct) / 100;
+  trigRelThreshold  = trigIdleVal + (range * trigRelPct) / 100;
+}
+
+
+// ================= HARDWARE WRITERS =================
+void setSol1PWM(int pwm) {
+  if (sol1CurrentPwm != pwm) { 
+    sol1CurrentPwm = pwm;
+    ledcWrite(SOL1_PIN, pwm); 
+  }
+}
+
+void setSol2PWM(int pwm) {
+  if (sol2CurrentPwm != pwm) { 
+    sol2CurrentPwm = pwm;
+    ledcWrite(SOL2_PIN, pwm); 
+  }
+}
+
+void setLED(bool on) {
+  if (hardwareLedState != on) { 
+    hardwareLedState = on; 
+    digitalWrite(LED_PIN, on); 
+  }
+}
+
 // ================= CONFIGURATION =================
 void loadConfig() {
   prefs.begin(PREF_NAME, true);
@@ -146,6 +180,8 @@ void loadConfig() {
   trigMaxVal = prefs.getInt("th_max", DEF_TRIG_MAX);
   trigFirePct = prefs.getInt("th_fpct", DEF_TRIG_FIRE_PCT);
   trigRelPct = prefs.getInt("th_rpct", DEF_TRIG_REL_PCT);
+
+  precalcTrigger();
   
   prefs.end();
 }
@@ -165,7 +201,7 @@ void startCalibration(int stateIndex) {
   calibState = stateIndex; 
 }
 
-void handleCalibration() {
+void handleHallCalibration() {
   static uint32_t lastCalibRead = 0;
   if (millis() - lastCalibRead < 10) return; // Sample every 10ms
   lastCalibRead = millis();
@@ -178,19 +214,19 @@ void handleCalibration() {
     int finalVal = (calibSamples > 0) ? (calibSum / calibSamples) : analogRead(pin);
 
     prefs.begin(PREF_NAME, false);
-    if (calibState == 0) {
+    if (calibState == 0) { // Safe
       safeVal = finalVal;
       prefs.putInt("hs_val", finalVal);
-    } else if (calibState == 1) {
+    } else if (calibState == 1) { // Mode 1
       mode1Val = finalVal;
       prefs.putInt("hm1_val", finalVal);
-    } else if (calibState == 2) {
+    } else if (calibState == 2) { // Mode 2
       mode2Val = finalVal;
       prefs.putInt("hm2_val", finalVal);
-    } else if (calibState == 3) {
+    } else if (calibState == 3) { // Trigger Idle
       trigIdleVal = finalVal;
       prefs.putInt("th_idle", finalVal);
-    } else if (calibState == 4) {
+    } else if (calibState == 4) { // Trigger Full
       trigMaxVal = finalVal;
       prefs.putInt("th_max", finalVal);
     }
@@ -203,75 +239,45 @@ void handleCalibration() {
 
     safeHolding = false;
 
+    precalcTrigger();
+
     updateConfigCharacteristic();
     sendCalibrationDoneBLE(lastState);
   }
 }
 
 // ================= (NORMAL OPERATION) =================
-void handleSelectorNormal() {
+void handleHallSelector() {
   int raw = analogRead(SELECTOR_HALL_PIN);
 
-  // ===== FILTER (EMA - Integer Math) =====
   if (!hallInitialized) {
     filteredHall = raw;
     hallInitialized = true;
   } else {
-    filteredHall = (filteredHall * 3 + raw) / 4; // Alpha 0.25
+    filteredHall = (filteredHall * 3 + raw) / 4;
   }
-
   int hall = filteredHall;
 
-  // ===== SORT VALUES =====
-  int v0 = safeVal;
-  int v1 = mode1Val;
-  int v2 = mode2Val;
+  int dSafe  = abs(hall - safeVal);
+  int dMode1 = abs(hall - mode1Val);
+  int dMode2 = abs(hall - mode2Val);
 
-  if (v0 > v1) { int t = v0; v0 = v1; v1 = t; }
-  if (v1 > v2) { int t = v1; v1 = v2; v2 = t; }
-  if (v0 > v1) { int t = v0; v0 = v1; v1 = t; }
-
-  // ===== MIDPOINT =====
-  int b1 = (v0 + v1) / 2;
-  int b2 = (v1 + v2) / 2;
-
-  // ===== MAP STATE =====
-  int state0 = (v0 == safeVal) ? -1 : (v0 == mode1Val ? 0 : 1);
-  int state1 = (v1 == safeVal) ? -1 : (v1 == mode1Val ? 0 : 1);
-  int state2 = (v2 == safeVal) ? -1 : (v2 == mode1Val ? 0 : 1);
-
-  int newState = selectorState; 
-
-  // ===== HYSTERESIS LOGIC =====
-  switch (selectorState) {
-    case -1: // SAFE
-      if (hall > b1 + HALL_HYSTERESIS) {
-        newState = (hall <= b2) ? state1 : state2;
-      }
-      break;
-
-    case 0: // MODE 0
-      if (hall < b1 - HALL_HYSTERESIS) {
-        newState = state0;
-      } else if (hall > b2 + HALL_HYSTERESIS) {
-        newState = state2;
-      }
-      break;
-
-    case 1: // MODE 1
-      if (hall < b2 - HALL_HYSTERESIS) {
-        newState = (hall <= b1) ? state0 : state1;
-      }
-      break;
-
-    default:
-      if (hall <= b1) newState = state0;
-      else if (hall <= b2) newState = state1;
-      else newState = state2;
-      break;
+  if (selectorState == -1) { 
+    dMode1 += SELECTOR_HYST_LIGHT;
+    dMode2 += SELECTOR_HYST_HEAVY;
+  } 
+  else if (selectorState == 0) { 
+    dSafe  += SELECTOR_HYST_LIGHT;
+    dMode2 += SELECTOR_HYST_HEAVY;
+  } 
+  else if (selectorState == 1) { 
+    dMode1 += SELECTOR_HYST_HEAVY;
+    dSafe  += SELECTOR_HYST_HEAVY;
   }
 
-  selectorState = newState;
+  if (dSafe <= dMode1 && dSafe <= dMode2) selectorState = -1;
+  else if (dMode1 <= dSafe && dMode1 <= dMode2) selectorState = 0;
+  else selectorState = 1;
 }
 
 // ================= SELECTOR MASTER =================
@@ -283,7 +289,7 @@ void readSelector() {
     if(safe) selectorState = -1;
     else selectorState = (digitalRead(MODE_PIN) == LOW) ? 1 : 0;
   } else {
-    handleSelectorNormal();
+    handleHallSelector();
     safe = (selectorState == -1);
   }
 
@@ -298,28 +304,6 @@ void readSelector() {
       configToggleDone = true;
     }
   } else safeHolding = false;
-}
-
-// ================= HARDWARE WRITERS =================
-void setSol1PWM(int pwm) {
-  if (sol1CurrentPwm != pwm) { 
-    sol1CurrentPwm = pwm;
-    ledcWrite(SOL1_PIN, pwm); 
-  }
-}
-
-void setSol2PWM(int pwm) {
-  if (sol2CurrentPwm != pwm) { 
-    sol2CurrentPwm = pwm;
-    ledcWrite(SOL2_PIN, pwm); 
-  }
-}
-
-void setLED(bool on) {
-  if (hardwareLedState != on) { 
-    hardwareLedState = on; 
-    digitalWrite(LED_PIN, on); 
-  }
 }
 
 // ================= TRIGGER LOGIC =================
@@ -341,26 +325,16 @@ void readTrigger() {
     static int filteredTrigHall = 0;
     static bool trigHallInit = false;
     if (!trigHallInit) { filteredTrigHall = rawHall; trigHallInit = true; }
-    else { filteredTrigHall = (filteredTrigHall * 3 + rawHall * 1) / 4; }
+    else { filteredTrigHall = (filteredTrigHall * 3 + rawHall) / 4; }
     
     int hall = filteredTrigHall;
     
-    int range = trigMaxVal - trigIdleVal;
-    int pct = 0;
-    if (range != 0) {
-      pct = ((hall - trigIdleVal) * 100) / range;
-    }
-    
-    if (range < 0) { // reverse handling
-      pct = ((trigIdleVal - hall) * 100) / (-range);
-    }
-    
     if (triggerState == LOW) {
-       if (pct >= trigFirePct) isPulled = true;
-       else isPulled = false;
+      if (!trigInverted) isPulled = (hall >= trigFireThreshold);
+      else               isPulled = (hall <= trigFireThreshold);
     } else {
-       if (pct <= trigRelPct) isPulled = false;
-       else isPulled = true;
+      if (!trigInverted) isPulled = (hall > trigRelThreshold);
+      else               isPulled = (hall < trigRelThreshold);
     }
   } else {
     isPulled = physicalTriggerState;
@@ -456,6 +430,7 @@ void updateFire() {
 // ================= LED INDICATORS =================
 void updateLED() {
   uint32_t now = millis();
+  
   if (configActive) {
     if (now - ledTimer > 100) {
       ledTimer = now; 
@@ -464,21 +439,30 @@ void updateLED() {
     }
     return; 
   }
+  
   if (selectorState == -1) {
-    setLED(false); 
+    if (hardwareLedState) setLED(false);
+    logicalLedState = false;
+    ledBlinkCount = 0;
     return;
   }
+  
   if (ledBlinkCount < (selectorState + 1)) {
     if (now - ledTimer > 150) {
       ledTimer = now; 
       logicalLedState = !logicalLedState; 
       setLED(logicalLedState);
-      if (!logicalLedState) ledBlinkCount++;
+      
+      if (!logicalLedState) { 
+        ledBlinkCount++;
+        if (ledBlinkCount >= (selectorState + 1)) {
+          ledPauseTimer = now; 
+        }
+      }
     }
   } else {
     setLED(false);
     if (now - ledPauseTimer > 2000) {
-      ledPauseTimer = now; 
       ledBlinkCount = 0;
     }
   }
@@ -505,7 +489,7 @@ void setup() {
 
 void loop() {
   if (calibState != -1) {
-    handleCalibration();
+    handleHallCalibration();
     return;
   }
 
