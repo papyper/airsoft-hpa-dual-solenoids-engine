@@ -374,7 +374,7 @@ void readTrigger() {
       bool fallingEdge = (isPulled == false && triggerState == true);
       
       triggerState = isPulled;
-      triggerEdge = risingEdge;
+      if (risingEdge) triggerEdge = true;
       
       if (fallingEdge) pendingReleaseFire = true;
       if (risingEdge) pendingReleaseFire = false; 
@@ -519,7 +519,8 @@ void loop() {
     fcuState = S_IDLE; 
     setSol1PWM(0); 
     setSol2PWM(0);
-    pendingReleaseFire = false; 
+    pendingReleaseFire = false;
+    triggerEdge = false;
     return;
   }
 
@@ -529,9 +530,11 @@ void loop() {
   if (fcuState == S_IDLE && !configActive) {
     if (m->round_per_trigger == -1) {
       if (triggerState == HIGH) startFire(m, -1); 
-      pendingReleaseFire = false; 
+      pendingReleaseFire = false;
+      triggerEdge = false;
     } else {
       if (triggerEdge) {
+        triggerEdge = false;
         startFire(m, m->round_per_trigger); 
       } else if (pendingReleaseFire && m->round_per_trigger_release > 0) {
         startFire(m, m->round_per_trigger_release); 
@@ -542,6 +545,5 @@ void loop() {
     }
   }
   
-  triggerEdge = false;
   updateFire();
 }
