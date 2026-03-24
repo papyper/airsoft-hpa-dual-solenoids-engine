@@ -7,6 +7,7 @@ NimBLEServer* pServer = NULL;
 NimBLECharacteristic* pConfigCharacteristic = NULL;
 NimBLECharacteristic* pStateCharacteristic = NULL;
 bool deviceConnected = false; 
+bool bleInitialized = false;
 
 // Helper function to split CSV strings
 String getValue(String data, char separator, int index) {
@@ -41,6 +42,59 @@ void updateConfigCharacteristic() {
     }
 }
 
+void sendLiveStatesBLE() {
+  static bool lastSafe = false;
+  static int lastMode = -1;
+  static bool lastFired = false;
+  static uint32_t lastShotCount = 0;
+  static uint32_t lastHallSend = 0;
+
+  bool safe = selectorState == -1;
+  int modeIndex = selectorState;
+  bool fired = (triggerState == HIGH);
+
+  bool stateChanged = (safe != lastSafe || modeIndex != lastMode || fired != lastFired || shotCount != lastShotCount);
+  
+  bool timeToSendHall = (USE_HALL_SELECTOR || USE_HALL_TRIGGER) && (millis() - lastHallSend >= 100);
+
+  if ((stateChanged || timeToSendHall) && pStateCharacteristic != NULL) {
+      lastSafe = safe;
+      lastMode = modeIndex;
+      lastFired = fired;
+      lastShotCount = shotCount;
+      if (timeToSendHall) lastHallSend = millis();
+
+      String selStr;
+      if (safe) selStr = "Safe";
+      else if (modeIndex == 0) selStr = "Mode 1";
+      else selStr = "Mode 2";
+
+      String trigStr = fired ? "Fired" : "Idle";
+      String stateStr = selStr + "," + trigStr + "," + String(shotCount);
+
+      if (USE_HALL_SELECTOR || USE_HALL_TRIGGER) {
+          stateStr += "," + String(analogRead(SELECTOR_HALL_PIN)) + "," + String(analogRead(TRIGGER_HALL_PIN));
+      }
+
+      pStateCharacteristic->setValue((uint8_t*)stateStr.c_str(), stateStr.length());
+      pStateCharacteristic->notify();
+  }
+}
+
+void sendCalibrationDoneBLE(int state) {
+  if (pStateCharacteristic != NULL && deviceConnected) {
+      String msg = "CAL_DONE," + String(state) + 
+                   "," + String(safeVal) + 
+                   "," + String(mode1Val) + 
+                   "," + String(mode2Val) +
+                   "," + String(trigIdleVal) +
+                   "," + String(trigMaxVal);
+                   
+      pStateCharacteristic->setValue((uint8_t*)msg.c_str(), msg.length());
+      pStateCharacteristic->notify();
+  }
+}
+
 class ConfigCallbacks: public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
         std::string rawValue = pCharacteristic->getValue();
@@ -54,6 +108,12 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
                 int stateToCalibrate = value.substring(4).toInt();
                 startCalibration(stateToCalibrate); 
                 return; // Stop here, do not proceed to saving profiles
+            }
+
+            if (value == "RST_CNT") {
+                shotCount = 0;
+                sendLiveStatesBLE();
+                return;
             }
 
             // Normal Profile Saving
@@ -114,32 +174,35 @@ ConfigCallbacks configCallbacksInst;
 ServerCallbacks serverCallbacksInst;
 
 void startBLE() {
-  NimBLEDevice::init(BLE_NAME);
-  NimBLEDevice::setMTU(512);
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9); 
+  if (!bleInitialized) {
+      NimBLEDevice::init(BLE_NAME);
+      NimBLEDevice::setMTU(512);
+      NimBLEDevice::setPower(ESP_PWR_LVL_P9); 
 
-  pServer = NimBLEDevice::createServer();
-  pServer->setCallbacks(&serverCallbacksInst);
+      pServer = NimBLEDevice::createServer();
+      pServer->setCallbacks(&serverCallbacksInst);
 
-  NimBLEService *pService = pServer->createService(SERVICE_UUID);
+      NimBLEService *pService = pServer->createService(SERVICE_UUID);
 
-  pConfigCharacteristic = pService->createCharacteristic(
-                             CONFIG_CHAR_UUID,
-                             NIMBLE_PROPERTY::READ |
-                             NIMBLE_PROPERTY::WRITE
-                           );
-  pConfigCharacteristic->setCallbacks(&configCallbacksInst);
+      pConfigCharacteristic = pService->createCharacteristic(
+                                   CONFIG_CHAR_UUID,
+                                   NIMBLE_PROPERTY::READ |
+                                   NIMBLE_PROPERTY::WRITE
+                                 );
+      pConfigCharacteristic->setCallbacks(&configCallbacksInst);
 
-  pStateCharacteristic = pService->createCharacteristic(
-                             STATE_CHAR_UUID,
-                             NIMBLE_PROPERTY::READ | 
-                             NIMBLE_PROPERTY::NOTIFY
-                           );
-  
-  updateConfigCharacteristic();
-  pStateCharacteristic->setValue("Safe,Idle"); 
+      pStateCharacteristic = pService->createCharacteristic(
+                                   STATE_CHAR_UUID,
+                                   NIMBLE_PROPERTY::READ | 
+                                   NIMBLE_PROPERTY::NOTIFY
+                                 );
+      
+      updateConfigCharacteristic();
+      pStateCharacteristic->setValue("Safe,Idle,0"); 
 
-  pService->start();
+      pService->start();
+      bleInitialized = true;
+  }
 
   NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
   pAdvertising->setName(BLE_NAME);
@@ -151,69 +214,22 @@ void startBLE() {
 
 void stopBLE() {
   configActive = false;
-  deviceConnected = false;
 
   setLED(false);
   logicalLedState = false;
   ledBlinkCount = 0;
 
-  if (pServer != NULL) {
-    NimBLEDevice::deinit(true);
-    pServer = NULL;
-    pConfigCharacteristic = NULL;
-    pStateCharacteristic = NULL;
-  }
-}
-
-void sendLiveStatesBLE() {
-  static bool lastSafe = false;
-  static int lastMode = -1;
-  static bool lastFired = false;
-  static uint32_t lastHallSend = 0;
-
-  bool safe = selectorState == -1;
-  int modeIndex = selectorState;
-  bool fired = (triggerState == HIGH);
-
-  bool stateChanged = (safe != lastSafe || modeIndex != lastMode || fired != lastFired);
-  
-  bool timeToSendHall = (USE_HALL_SELECTOR || USE_HALL_TRIGGER) && (millis() - lastHallSend >= 100);
-
-  if ((stateChanged || timeToSendHall) && pStateCharacteristic != NULL) {
-      lastSafe = safe;
-      lastMode = modeIndex;
-      lastFired = fired;
-      if (timeToSendHall) lastHallSend = millis();
-
-      String selStr;
-      if (safe) selStr = "Safe";
-      else if (modeIndex == 0) selStr = "Mode 1";
-      else selStr = "Mode 2";
-
-      String trigStr = fired ? "Fired" : "Idle";
-      String stateStr = selStr + "," + trigStr;
-
-      if (USE_HALL_SELECTOR || USE_HALL_TRIGGER) {
-          stateStr += "," + String(analogRead(SELECTOR_HALL_PIN)) + "," + String(analogRead(TRIGGER_HALL_PIN));
+  if (bleInitialized && pServer != NULL) {
+      std::vector<uint16_t> clients = pServer->getPeerDevices();
+      for (size_t i = 0; i < clients.size(); i++) {
+          pServer->disconnect(clients[i]);
       }
-
-      pStateCharacteristic->setValue((uint8_t*)stateStr.c_str(), stateStr.length());
-      pStateCharacteristic->notify();
+      
+      NimBLEDevice::getAdvertising()->stop();
   }
+  
+  deviceConnected = false;
 }
 
-void sendCalibrationDoneBLE(int state) {
-  if (pStateCharacteristic != NULL && deviceConnected) {
-      String msg = "CAL_DONE," + String(state) + 
-                   "," + String(safeVal) + 
-                   "," + String(mode1Val) + 
-                   "," + String(mode2Val) +
-                   "," + String(trigIdleVal) +
-                   "," + String(trigMaxVal);
-                   
-      pStateCharacteristic->setValue((uint8_t*)msg.c_str(), msg.length());
-      pStateCharacteristic->notify();
-  }
-}
 
 #endif

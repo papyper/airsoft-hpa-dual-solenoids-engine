@@ -124,7 +124,7 @@
 
         /* ─── Live State ──────────────────────────────── */
         #live-box { display: none; margin-bottom: 14px; }
-        .live-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .live-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .live-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -358,6 +358,14 @@
                     <div class="live-val" id="trig-state">—</div>
                 </div>
             </div>
+            <div class="live-card" style="position: relative;">
+                <div class="live-icon">🔢</div>
+                <div>
+                    <label>SHOTS</label>
+                    <div class="live-val" id="count-state">0</div>
+                </div>
+                <button onclick="resetCount()" style="position: absolute; right: 10px; padding: 4px 8px; font-family: var(--mono); font-size: 9px; font-weight: 700; background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); border-radius: 5px; cursor: pointer;">RST</button>
+            </div>
         </div>
     </div>
 
@@ -476,10 +484,11 @@ function setStatus(msg, state = "") {
     $("status-dot").className = "status-dot" + (state ? ` ${state}` : "");
 }
 
-function setLiveState(sel, trig, rawHall, rawTrigHall) {
+function setLiveState(sel, trig, count, rawHall, rawTrigHall) {
     $("sel-state").textContent  = sel;
     $("trig-state").textContent = trig;
     $("trig-state").className   = "live-val" + (trig === "Fired" ? " fired" : "");
+    if (count !== undefined) $("count-state").textContent = count;
     $("sel-label").textContent  = rawHall !== undefined ? `SELECTOR (${rawHall})` : "SELECTOR";
     $("trig-label").textContent = rawTrigHall !== undefined ? `TRIGGER (${rawTrigHall})` : "TRIGGER";
 }
@@ -741,8 +750,8 @@ function onStateChanged(event) {
         }
         return;
     }
-    const [sel, trig, rawHall, rawTrigHall] = parts;
-    if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall, rawTrigHall);
+    const [sel, trig, count, rawHall, rawTrigHall] = parts;
+    if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, count, rawHall, rawTrigHall);
 }
 
 async function connectBLE() {
@@ -764,8 +773,8 @@ async function connectBLE() {
 
         setStatus("Syncing live states…", "connecting");
         const initRaw = await stateChar.readValue();
-        const [sel, trig, rawHall, rawTrigHall] = new TextDecoder().decode(initRaw).split(",");
-        if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, rawHall, rawTrigHall);
+        const [sel, trig, count, rawHall, rawTrigHall] = new TextDecoder().decode(initRaw).split(",");
+        if (sel !== undefined && trig !== undefined) setLiveState(sel, trig, count, rawHall, rawTrigHall);
 
         await stateChar.startNotifications();
         stateChar.addEventListener("characteristicvaluechanged", onStateChanged);
@@ -802,6 +811,16 @@ async function sendCalibrate(stateIndex) {
         console.error(e);
         btn.textContent = "ERROR"; res.textContent = "Failed";
         setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+    }
+}
+
+async function resetCount() {
+    if (!configChar) return;
+    try {
+        await configChar.writeValueWithResponse(new TextEncoder().encode("RST_CNT"));
+        $("count-state").textContent = "0";
+    } catch(e) {
+        console.error(e);
     }
 }
 

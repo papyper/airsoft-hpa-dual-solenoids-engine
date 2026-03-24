@@ -41,6 +41,8 @@ enum FCUState {
 };
 FCUState fcuState = S_IDLE;
 
+uint32_t shotCount = 0;
+
 // ===== FIRING VARIABLES =====
 uint32_t tStart = 0;
 FireMode* currentMode;
@@ -360,7 +362,9 @@ void readTrigger() {
 // ================= FIRING STATE MACHINE =================
 void startFire(FireMode* m, int shots) {
   currentMode = m;
-  shotsRemaining = shots; 
+  shotsRemaining = shots;
+
+  shotCount++;
 
   tStart = micros();
   setSol1PWM(255); 
@@ -380,6 +384,8 @@ void nextShot() {
   if (shotsRemaining == 0) {
     fcuState = S_IDLE; setSol1PWM(0); setSol2PWM(0); return;
   }
+
+  shotCount++;
   
   tStart = micros();
   setSol1PWM(255); 
