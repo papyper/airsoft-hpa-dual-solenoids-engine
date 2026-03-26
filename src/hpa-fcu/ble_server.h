@@ -224,7 +224,6 @@ void stopBLE() {
       for (size_t i = 0; i < clients.size(); i++) {
           pServer->disconnect(clients[i]);
       }
-      
       NimBLEDevice::getAdvertising()->stop();
   }
   
