@@ -1,4 +1,4 @@
-![3P-HPA-Dual-Solenoid-Engine-FDM-v2-render.png][images/3P-HPA-Dual-Solenoid-Engine-FDM-v2-render.png]
+![3P-HPA-Dual-Solenoid-Engine-FDM-v2-render](images/3P-HPA-Dual-Solenoid-Engine-FDM-v2-render.png)
 
 
 # Please check the size of brass inserts, brass/alu tube by this way:
