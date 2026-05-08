@@ -24,6 +24,7 @@ OD3xID1 (for solenoid seat orifice)
 ## Alu tube (mm)
 
 OD5xID3 (for piston body, use alu for light weight than brass)
+OD25xID24 (for engine body, can use AEG cylinder instead)
 
 ## Orings (mm)
 
