@@ -22,6 +22,10 @@ struct FireMode {
   int round_per_trigger_release;
   int round_per_second;
 
+  // ----- PRECALC VARIABLES -----
+  int sol1_hold_pwm_8bit;
+  int sol2_hold_pwm_8bit;
+
   uint32_t t_sol1_peak_end; 
   uint32_t t_sol1_off;
   uint32_t t_sol2_on;
@@ -96,20 +100,35 @@ bool logicalLedState = false;
 void precalcProfile(FireMode& m) {
   uint32_t t = 0;
   
-  uint32_t actual_sol1_peak = (m.sol1_peak > m.sol1_open) ? m.sol1_open : m.sol1_peak;
-  m.t_sol1_peak_end = t + actual_sol1_peak;
-  t += m.sol1_open;
-  m.t_sol1_off = t;
+  m.sol1_hold_pwm_8bit = (m.sol1_hold_pwm * 255) / 100;
+  m.sol2_hold_pwm_8bit = (m.sol2_hold_pwm * 255) / 100;
 
-  t += m.after_sol1;
+  if (m.sol1_open > 0) {
+    uint32_t actual_sol1_peak = (m.sol1_peak > m.sol1_open) ? m.sol1_open : m.sol1_peak;
+    m.t_sol1_peak_end = t + actual_sol1_peak;
+    t += m.sol1_open;
+    m.t_sol1_off = t;
+    
+    t += m.after_sol1;
+  } else {
+    m.t_sol1_peak_end = 0;
+    m.t_sol1_off = 0;
+  }
+
   m.t_sol2_on = t;
 
-  uint32_t actual_sol2_peak = (m.sol2_peak > m.sol2_open) ? m.sol2_open : m.sol2_peak;
-  m.t_sol2_peak_end = t + actual_sol2_peak;
-  t += m.sol2_open;
-  m.t_sol2_off = t;
+  if (m.sol2_open > 0) {
+    uint32_t actual_sol2_peak = (m.sol2_peak > m.sol2_open) ? m.sol2_open : m.sol2_peak;
+    m.t_sol2_peak_end = t + actual_sol2_peak;
+    t += m.sol2_open;
+    m.t_sol2_off = t;
 
-  t += m.after_sol2;
+    t += m.after_sol2;
+  } else {
+    m.t_sol2_peak_end = t;
+    m.t_sol2_off = t;
+  }
+
   m.t_base_cycle = t; 
 
   if (m.round_per_second > 0) {
@@ -117,6 +136,10 @@ void precalcProfile(FireMode& m) {
     if (target > t) t = target;
   }
   m.t_cycle_end = t;
+
+  if (m.t_cycle_end < 1000) {
+      m.t_cycle_end = 1000;
+  }
 }
 
 void precalcTrigger() {
@@ -367,11 +390,17 @@ void startFire(FireMode* m, int shots) {
   shotCount++;
 
   tStart = micros();
-  setSol1PWM(255); 
+  setSol1PWM(0);
   setSol2PWM(0);
   
-  fcuState = S_SOL1_PEAK;
-  updateFire(); 
+  if (currentMode->sol1_open > 0) {
+    setSol1PWM(255); 
+    fcuState = S_SOL1_PEAK;
+  } else {
+    fcuState = S_WAIT_SOL2;
+  }
+  
+  updateFire();
 }
 
 void nextShot() {
@@ -388,9 +417,17 @@ void nextShot() {
   shotCount++;
   
   tStart = micros();
-  setSol1PWM(255); 
+  setSol1PWM(0);
   setSol2PWM(0);
-  fcuState = S_SOL1_PEAK;
+  
+  if (currentMode->sol1_open > 0) {
+    setSol1PWM(255); 
+    fcuState = S_SOL1_PEAK;
+  } else {
+    fcuState = S_WAIT_SOL2;
+  }
+  
+  updateFire();
 }
 
 void updateFire() {
@@ -400,33 +437,45 @@ void updateFire() {
 
   if (fcuState == S_SOL1_PEAK) {
     if (dt >= currentMode->t_sol1_off) {
-      setSol1PWM(0); fcuState = S_WAIT_SOL2;
+      setSol1PWM(0); 
+      fcuState = S_WAIT_SOL2;
     } else if (dt >= currentMode->t_sol1_peak_end) {
-      setSol1PWM(currentMode->sol1_hold_pwm); fcuState = S_SOL1_HOLD;
+      setSol1PWM(currentMode->sol1_hold_pwm_8bit);
+      fcuState = S_SOL1_HOLD;
     }
   }
-
-  if (fcuState == S_SOL1_HOLD && dt >= currentMode->t_sol1_off) {
-    setSol1PWM(0); fcuState = S_WAIT_SOL2;
+  else if (fcuState == S_SOL1_HOLD) {
+    if(dt >= currentMode->t_sol1_off) {
+      setSol1PWM(0); 
+      fcuState = S_WAIT_SOL2;
+    }
   }
-  
-  if (fcuState == S_WAIT_SOL2 && dt >= currentMode->t_sol2_on) {
-    setSol2PWM(255); fcuState = S_SOL2_PEAK;
+  else if (fcuState == S_WAIT_SOL2) {
+    if (dt >= currentMode->t_sol2_on) {
+      if (currentMode->sol2_open > 0) {
+        setSol2PWM(255); 
+        fcuState = S_SOL2_PEAK;
+      } else {
+        fcuState = S_WAIT_CYCLE_END;
+      }
+    }
   }
-  
-  if (fcuState == S_SOL2_PEAK) {
+  else if (fcuState == S_SOL2_PEAK) {
     if (dt >= currentMode->t_sol2_off) {
-      setSol2PWM(0); fcuState = S_WAIT_CYCLE_END;
+      setSol2PWM(0); 
+      fcuState = S_WAIT_CYCLE_END;
     } else if (dt >= currentMode->t_sol2_peak_end) {
-      setSol2PWM(currentMode->sol2_hold_pwm); fcuState = S_SOL2_HOLD;
+      setSol2PWM(currentMode->sol2_hold_pwm_8bit);
+      fcuState = S_SOL2_HOLD;
     }
   }
-
-  if (fcuState == S_SOL2_HOLD && dt >= currentMode->t_sol2_off) {
-    setSol2PWM(0); fcuState = S_WAIT_CYCLE_END;
+  else if (fcuState == S_SOL2_HOLD) {
+    if (dt >= currentMode->t_sol2_off) {
+      setSol2PWM(0); 
+      fcuState = S_WAIT_CYCLE_END;
+    }
   }
-
-  if (fcuState == S_WAIT_CYCLE_END) {
+  else if (fcuState == S_WAIT_CYCLE_END) {
     bool bypassRPS = (shotsRemaining == 0 && pendingReleaseFire);
     uint32_t targetWaitTime = bypassRPS ? currentMode->t_base_cycle : currentMode->t_cycle_end;
     if (dt >= targetWaitTime) nextShot(); 

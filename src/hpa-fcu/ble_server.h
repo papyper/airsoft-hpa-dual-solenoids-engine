@@ -214,17 +214,23 @@ void startBLE() {
 
 void stopBLE() {
   configActive = false;
-
   setLED(false);
   logicalLedState = false;
   ledBlinkCount = 0;
-
-  if (bleInitialized && pServer != NULL) {
-      std::vector<uint16_t> clients = pServer->getPeerDevices();
-      for (size_t i = 0; i < clients.size(); i++) {
-          pServer->disconnect(clients[i]);
+  if (bleInitialized) {
+      if (pServer != NULL) {
+          std::vector<uint16_t> clients = pServer->getPeerDevices();
+          for (size_t i = 0; i < clients.size(); i++) {
+              pServer->disconnect(clients[i]);
+          }
       }
       NimBLEDevice::getAdvertising()->stop();
+      delay(50);
+      NimBLEDevice::deinit(true); 
+      pServer = NULL;
+      pConfigCharacteristic = NULL;
+      pStateCharacteristic = NULL;
+      bleInitialized = false; 
   }
   
   deviceConnected = false;
