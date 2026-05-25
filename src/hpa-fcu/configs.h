@@ -31,17 +31,17 @@ const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds (micros)
 #define SELECTOR_HYST_HEAVY 350
 
 // Default Selector Hall Values (Nearest Neighbor)
-#define DEF_HALL_SAFE  2400
+#define DEF_HALL_SAFE  2370
 #define DEF_HALL_MODE1 2000
-#define DEF_HALL_MODE2 1500
+#define DEF_HALL_MODE2 1200
 
 // ===== TRIGGER HALL CONFIGURATION =====
 #define USE_HALL_TRIGGER true
 #define TRIGGER_FILTER_ALPHA 0.8f  // 0.8 > fast response for trigger
 
 // Default Trigger Hall Values
-#define DEF_TRIG_IDLE     2300
-#define DEF_TRIG_MAX      2600
+#define DEF_TRIG_IDLE     2350
+#define DEF_TRIG_MAX      1800
 #define DEF_TRIG_FIRE_PCT 20
 #define DEF_TRIG_REL_PCT  10
 
