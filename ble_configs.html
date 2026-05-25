@@ -41,7 +41,6 @@
             padding: 0 0 100px;
         }
 
-        /* ─── Scanline overlay ─────────────────────── */
         body::before {
             content:'';
             position:fixed; inset:0; z-index:999; pointer-events:none;
@@ -50,7 +49,7 @@
 
         .container { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 
-        /* ─── Header ──────────────────────────────────── */
+        /* ─── Header ── */
         header {
             padding: 18px 0 16px;
             margin-bottom: 18px;
@@ -89,7 +88,7 @@
             letter-spacing: 1px;
         }
 
-        /* ─── Status Bar ──────────────────────────────── */
+        /* ─── Status Bar ── */
         .status-bar {
             display: flex; align-items: center; gap: 10px;
             background: var(--surface);
@@ -122,7 +121,7 @@
         }
         .btn-connect:hover { background: rgba(0,180,255,.2); box-shadow: var(--glow); }
 
-        /* ─── Live State ──────────────────────────────── */
+        /* ─── Live State ── */
         #live-box { display: none; margin-bottom: 14px; }
         .live-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .live-card {
@@ -132,12 +131,22 @@
             padding: 10px 14px;
             display: flex; align-items: center; gap: 12px;
         }
+        .live-card-reset {
+            position: absolute;
+            right: 10px;
+            padding: 4px 8px;
+            font-family: var(--mono); font-size: 9px; font-weight: 700;
+            background: var(--surface2); color: var(--text-muted);
+            border: 1px solid var(--border); border-radius: 5px;
+            cursor: pointer;
+        }
+        .live-card-wrap { position: relative; }
         .live-icon { font-size: 18px; line-height: 1; opacity: .6; }
         .live-card label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 3px; }
         .live-val { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent); }
         .live-val.fired { color: var(--red); text-shadow: 0 0 12px rgba(255,61,90,.5); }
 
-        /* ─── Section Label ───────────────────────────── */
+        /* ─── Section Label ── */
         .section-label {
             font-family: var(--mono); font-size: 9px; font-weight: 700;
             letter-spacing: 2px; text-transform: uppercase;
@@ -147,7 +156,7 @@
         }
         .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
 
-        /* ─── Card ────────────────────────────────────── */
+        /* ─── Card ── */
         .card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -167,7 +176,7 @@
         .card-header-sub { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-left: auto; }
         .card-body { padding: 14px; }
 
-        /* ─── Calibration ─────────────────────────────── */
+        /* ─── Calibration ── */
         .cal-hint { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
         .cal-btn-row { display: flex; gap: 8px; }
         .cal-item { flex: 1; }
@@ -182,9 +191,10 @@
         .btn-cal:disabled { opacity: .4; cursor: not-allowed; }
         .cal-result { font-family: var(--mono); font-size: 10px; color: var(--green); text-align: center; margin-top: 5px; min-height: 16px; }
 
-        /* ─── Field ───────────────────────────────────── */
+        /* ─── Field ── */
         .field { display: flex; flex-direction: column; gap: 4px; }
         .field label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: .5px; }
+
         input[type=number], select {
             background: var(--bg2); color: var(--text);
             border: 1px solid var(--border2);
@@ -203,13 +213,13 @@
             background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
         }
 
-        /* ─── Fire Mode ───────────────────────────────── */
+        /* ─── Fire Mode ── */
         .fire-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* ─── Trigger thresholds ──────────────────────── */
+        /* ─── Trigger thresholds ── */
         .trig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 
-        /* ─── Tabs ────────────────────────────────────── */
+        /* ─── Tabs ── */
         .tab-bar {
             display: flex; gap: 3px;
             padding: 12px 14px 0;
@@ -229,7 +239,7 @@
         .profile-panel { display: none; }
         .profile-panel.active { display: block; }
 
-        /* ─── Profile panels layout ───────────────────── */
+        /* ─── Profile panels layout ── */
         .panel-inner {
             padding: 14px;
             border-top: 1px solid var(--border2);
@@ -237,7 +247,6 @@
             border-radius: 0 0 10px 10px;
         }
 
-        /* Overview card inside profile */
         .overview-strip {
             background: var(--bg2);
             border: 1px solid var(--border);
@@ -253,7 +262,6 @@
         .ov-val.mode-full  { color: var(--red); }
         .ov-val.mode-burst { color: var(--orange); }
 
-        /* Solenoid side-by-side */
         .sol-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .sol-block {
             background: var(--bg2);
@@ -272,12 +280,12 @@
         .sol-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); }
         .sol-block-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 
-        /* Rounds block */
         .rnd-block {
             background: var(--bg2);
             border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
+            margin-top: 10px;
         }
         .rnd-block-header {
             padding: 7px 12px;
@@ -288,10 +296,35 @@
         .rnd-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); }
         .rnd-block-body { padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
-        /* ─── Divider ─────────────────────────────────── */
-        .vdivider { width: 1px; background: var(--border); }
+        /* ─── Others card ── */
+        .others-switches {
+            border-bottom: 1px solid var(--border);
+        }
+        .switch-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .switch-row:last-child { border-bottom: none; }
+        .switch-label {
+            font-family: var(--mono); font-size: 11px; font-weight: 700;
+            color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
+        }
+        .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); border: 1px solid var(--border2); transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: var(--text-muted); transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background: rgba(0, 230, 118, 0.15); border-color: var(--green); }
+        input:checked + .slider:before { transform: translateX(16px); background: var(--green); box-shadow: var(--glow-green); }
 
-        /* ─── Save Bar ────────────────────────────────── */
+        .others-timings {
+            padding: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* ─── Save Bar ── */
         .save-bar {
             display: none;
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -316,19 +349,7 @@
         }
         .btn-save:disabled { opacity: .4; cursor: not-allowed; }
 
-        /* ─── Hidden ──────────────────────────────────── */
         #config-form { display: none; }
-
-        /* ─── Toggle Switch ───────────────────────────── */
-        .switch-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
-        .switch-row:last-child { border-bottom: none; }
-        .switch-label { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); border: 1px solid var(--border2); transition: .3s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: var(--text-muted); transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background: rgba(0, 230, 118, 0.15); border-color: var(--green); }
-        input:checked + .slider:before { transform: translateX(16px); background: var(--green); box-shadow: var(--glow-green); }
     </style>
 </head>
 <body>
@@ -369,13 +390,13 @@
                     <div class="live-val" id="trig-state">—</div>
                 </div>
             </div>
-            <div class="live-card" style="position: relative;">
+            <div class="live-card live-card-wrap">
                 <div class="live-icon">🔢</div>
                 <div>
                     <label>SHOTS</label>
                     <div class="live-val" id="count-state">0</div>
                 </div>
-                <button onclick="resetCount()" style="position: absolute; right: 10px; padding: 4px 8px; font-family: var(--mono); font-size: 9px; font-weight: 700; background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); border-radius: 5px; cursor: pointer;">RST</button>
+                <button class="live-card-reset" onclick="resetCount()">RST</button>
             </div>
         </div>
     </div>
@@ -384,7 +405,7 @@
 
         <!-- Selector Calibration -->
         <div class="section-label">Selector Calibration</div>
-        <div class="card" style="margin-bottom:12px">
+        <div class="card">
             <div class="card-body">
                 <p class="cal-hint">Move selector to position → press button to capture Hall sensor value.</p>
                 <div class="cal-btn-row">
@@ -406,10 +427,10 @@
 
         <!-- Trigger Calibration -->
         <div class="section-label">Trigger Calibration</div>
-        <div class="card" style="margin-bottom:12px">
+        <div class="card">
             <div class="card-body">
                 <p class="cal-hint">Release trigger → Set Idle. Pull fully → Set Full.</p>
-                <div class="cal-btn-row" style="margin-bottom:0">
+                <div class="cal-btn-row">
                     <div class="cal-item">
                         <button class="btn-cal" id="calBtn3" onclick="sendCalibrate(3)">SET IDLE</button>
                         <div class="cal-result" id="calRes3"></div>
@@ -434,7 +455,7 @@
 
         <!-- Fire Mode -->
         <div class="section-label">Fire Mode Assignment</div>
-        <div class="card" style="margin-bottom:12px">
+        <div class="card">
             <div class="card-body">
                 <div class="fire-row">
                     <div class="field"><label>Mode 1 → Profile</label><select id="slot0"></select></div>
@@ -450,15 +471,32 @@
             <div id="profiles-container"></div>
         </div>
 
+        <!-- Others -->
         <div class="section-label">Others</div>
-        <div class="card" style="margin-bottom:12px">
-            <div class="switch-row">
-                <span class="switch-label">Solenoid 1 Peak & Hold</span>
-                <label class="switch"><input type="checkbox" id="en_pnh1" checked><span class="slider"></span></label>
+        <div class="card">
+            <div class="others-switches">
+                <div class="switch-row">
+                    <span class="switch-label">Solenoid 1 Peak &amp; Hold</span>
+                    <label class="switch"><input type="checkbox" id="en_pnh1" checked><span class="slider"></span></label>
+                </div>
+                <div class="switch-row">
+                    <span class="switch-label">Solenoid 2 Peak &amp; Hold</span>
+                    <label class="switch"><input type="checkbox" id="en_pnh2" checked><span class="slider"></span></label>
+                </div>
             </div>
-            <div class="switch-row">
-                <span class="switch-label">Solenoid 2 Peak & Hold</span>
-                <label class="switch"><input type="checkbox" id="en_pnh2" checked><span class="slider"></span></label>
+            <div class="others-timings">
+                <div class="field">
+                    <label>BLE Hold Time (s)</label>
+                    <input type="number" id="cfg_hold" placeholder="3.0" step="0.1" min="0">
+                </div>
+                <div class="field">
+                    <label>Sleep Timeout (s)</label>
+                    <input type="number" id="slp_tout" placeholder="120" step="1" min="0">
+                </div>
+                <div class="field">
+                    <label>Wake Poll Interval (s)</label>
+                    <input type="number" id="wake_poll" placeholder="0.4" step="0.01" min="0">
+                </div>
             </div>
         </div>
 
@@ -474,7 +512,7 @@
 </div>
 
 <script>
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 const SERVICE_UUID  = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CONFIG_CHAR   = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const STATE_CHAR    = "1c9441a1-f3b1-4f16-8eb5-7c37a6b72a6b";
@@ -501,6 +539,20 @@ const ALL_FIELDS = [...SOL1_FIELDS, ...SOL2_FIELDS, ...ROUND_FIELDS];
 
 const $ = id => document.getElementById(id);
 
+// ─── Unit conversion helpers ──────────────────────────────────────────────────
+// cfg_hold: stored as µs → display as s
+function usToS(us)  { return us  ? (Number(us)  / 1e6).toString() : ""; }
+function sToUs(s)   { return s   ? Math.round(Number(s) * 1e6).toString() : ""; }
+
+// slp_tout: stored as ms → display as s
+function msToS(ms)  { return ms  ? (Number(ms)  / 1e3).toString() : ""; }
+function sToMs(s)   { return s   ? Math.round(Number(s) * 1e3).toString() : ""; }
+
+// wake_poll: stored as µs → display as s
+// same as cfg_hold
+const wakeUsToS = usToS;
+const wakeSToUs = sToUs;
+
 // ─── Status ───────────────────────────────────────────────────────────────────
 function setStatus(msg, state = "") {
     $("status-msg").textContent = msg;
@@ -516,7 +568,7 @@ function setLiveState(sel, trig, count, rawHall, rawTrigHall) {
     $("trig-label").textContent = rawTrigHall !== undefined ? `TRIGGER (${rawTrigHall})` : "TRIGGER";
 }
 
-// ─── Field helpers ───────────────────────────────────────────────────────────
+// ─── Field helpers ────────────────────────────────────────────────────────────
 function fid(pi, key) { return `p${pi}_${key}`; }
 function fel(pi, key) { return $(fid(pi, key)); }
 
@@ -535,7 +587,6 @@ function buildUI() {
         `<div id="panel${i}" class="profile-panel${i === 0 ? " active" : ""}">
             <div class="panel-inner">
 
-                <!-- Overview -->
                 <div class="overview-strip" id="overview_${i}">
                     <div class="ov-item">
                         <div class="ov-label">Ms / Shot</div>
@@ -555,7 +606,6 @@ function buildUI() {
                     </div>
                 </div>
 
-                <!-- Solenoid side-by-side -->
                 <div class="sol-row">
                     <div class="sol-block">
                         <div class="sol-block-header">
@@ -585,8 +635,7 @@ function buildUI() {
                     </div>
                 </div>
 
-                <!-- Rounds -->
-                <div class="rnd-block" style="margin-top:10px">
+                <div class="rnd-block">
                     <div class="rnd-block-header">
                         <div class="rnd-dot"></div>
                         <span class="rnd-block-title">ROUNDS</span>
@@ -608,10 +657,9 @@ function switchTab(i) {
     document.querySelectorAll(".profile-panel").forEach((p, j) => p.classList.toggle("active", j === i));
 }
 
-// ─── Overview updater ────────────────────────────────────────────────────────
+// ─── Overview updater ─────────────────────────────────────────────────────────
 function updateOverview() {
     for (let i = 0; i < PROFILE_COUNT; i++) {
-        // Timing
         const s1 = parseInt(fel(i, "s1").value) || 0;
         const d1 = parseInt(fel(i, "d1").value) || 0;
         const s2 = parseInt(fel(i, "s2").value) || 0;
@@ -628,7 +676,6 @@ function updateOverview() {
             rpsEl.textContent = "—";
         }
 
-        // Fire mode from Per Pull
         const rpt = parseInt(fel(i, "rpt").value);
         const modeEl = $(`ov_mode_${i}`);
         modeEl.className = "ov-val";
@@ -644,7 +691,7 @@ function updateOverview() {
             modeEl.textContent = `BURST ×${rpt}`;
             modeEl.classList.add("mode-burst");
         }
-        // Binary Trigger
+
         const rptr = parseInt(fel(i, "rptr").value);
         const btrigEl = $(`ov_btrig_${i}`);
         btrigEl.className = "ov-val";
@@ -659,12 +706,13 @@ function updateOverview() {
     }
 }
 
-// ─── BLE State ───────────────────────────────────────────────────────────────
+// ─── BLE State ────────────────────────────────────────────────────────────────
 let configChar, stateChar;
 
-// ─── Change Tracking ─────────────────────────────────────────────────────────
+// ─── Change Tracking ──────────────────────────────────────────────────────────
 let savedSnapshot = null;
 
+// Snapshot stores display values (seconds). Conversion happens only on save/load.
 function takeSnapshot() {
     return [
         $("slot0").value,
@@ -675,7 +723,10 @@ function takeSnapshot() {
         $("trig_fire_pct").value,
         $("trig_rel_pct").value,
         $("en_pnh1").checked ? 1 : 0,
-        $("en_pnh2").checked ? 1 : 0
+        $("en_pnh2").checked ? 1 : 0,
+        $("cfg_hold").value,
+        $("slp_tout").value,
+        $("wake_poll").value
     ].join(",");
 }
 
@@ -698,17 +749,24 @@ function togglePnH() {
 }
 
 function attachChangeListeners() {
-    ["slot0", "slot1", "trig_fire_pct", "trig_rel_pct"].forEach(id => $(id).addEventListener("change", checkDirty));
-    $("en_pnh1").addEventListener("change", togglePnH);
-    $("en_pnh2").addEventListener("change", togglePnH);
+    [
+        "slot0", "slot1", "trig_fire_pct", "trig_rel_pct",
+        "cfg_hold", "slp_tout", "wake_poll"
+    ].forEach(id => $(id).addEventListener("change", checkDirty));
+    $("en_pnh1").addEventListener("change", () => { togglePnH(); checkDirty(); });
+    $("en_pnh2").addEventListener("change", () => { togglePnH(); checkDirty(); });
     for (let i = 0; i < PROFILE_COUNT; i++) {
         for (const { key } of ALL_FIELDS) {
             fel(i, key).addEventListener("input", checkDirty);
         }
     }
+    // Also trigger checkDirty on input (not just change) for timing fields
+    ["cfg_hold", "slp_tout", "wake_poll"].forEach(id =>
+        $(id).addEventListener("input", checkDirty)
+    );
 }
 
-// ─── BLE Read / Write ────────────────────────────────────────────────────────
+// ─── BLE Read / Write ─────────────────────────────────────────────────────────
 async function readConfigs() {
     setStatus("Reading configs…", "connecting");
     const raw  = await configChar.readValue();
@@ -737,6 +795,11 @@ async function readConfigs() {
         $("en_pnh1").checked = (vals.length > idx+7) ? (vals[idx+7] === "1") : true;
         $("en_pnh2").checked = (vals.length > idx+8) ? (vals[idx+8] === "1") : true;
 
+        // Convert raw stored units → seconds for display
+        if (vals.length > idx+9)  $("cfg_hold").value = usToS(vals[idx+9]);
+        if (vals.length > idx+10) $("slp_tout").value = msToS(vals[idx+10]);
+        if (vals.length > idx+11) $("wake_poll").value = wakeUsToS(vals[idx+11]);
+
         togglePnH();
     }
 
@@ -751,9 +814,25 @@ async function saveConfigs() {
     btn.textContent = "SAVING…";
     btn.disabled = true;
     try {
-        const csv = takeSnapshot();
+        // Build snapshot from display values (seconds), then convert timing fields back
+        const base = [
+            $("slot0").value,
+            $("slot1").value,
+            ...Array.from({ length: PROFILE_COUNT }, (_, i) =>
+                ALL_FIELDS.map(({ key }) => fel(i, key).value)
+            ).flat(),
+            $("trig_fire_pct").value,
+            $("trig_rel_pct").value,
+            $("en_pnh1").checked ? 1 : 0,
+            $("en_pnh2").checked ? 1 : 0,
+            // Convert seconds → raw stored units
+            sToUs($("cfg_hold").value),
+            sToMs($("slp_tout").value),
+            wakeSToUs($("wake_poll").value)
+        ];
+        const csv = base.join(",");
         await configChar.writeValueWithResponse(new TextEncoder().encode(csv));
-        savedSnapshot = csv;
+        savedSnapshot = takeSnapshot(); // snapshot stays in seconds
         $("save-hint").innerHTML = "";
         btn.textContent = "✓ SAVED!";
     } catch (err) {
@@ -764,7 +843,7 @@ async function saveConfigs() {
     }
 }
 
-// ─── BLE Connect ─────────────────────────────────────────────────────────────
+// ─── BLE Connect ──────────────────────────────────────────────────────────────
 function onDisconnect() {
     setStatus("Disconnected!", "");
     $("live-box").style.display    = "none";
@@ -836,7 +915,7 @@ async function connectBLE() {
     }
 }
 
-// ─── Calibrate ───────────────────────────────────────────────────────────────
+// ─── Calibrate ────────────────────────────────────────────────────────────────
 async function sendCalibrate(stateIndex) {
     if (!configChar) return alert("Connect BLE first!");
     const btn = $(`calBtn${stateIndex}`);

@@ -102,6 +102,11 @@ uint32_t ledPauseTimer = 0;
 int ledBlinkCount = 0;
 bool logicalLedState = false;
 
+// ===== SYSTEM CONFIG VARIABLES =====
+uint32_t configHoldTime = DEF_CONFIG_HOLD_TIME;
+uint32_t sleepTimeoutMs = DEF_SLEEP_TIMEOUT_MS;
+uint32_t wakePollIntervalUs = DEF_WAKE_POLL_INTERVAL_US;
+
 // ================= PRE-CALCULATOR =================
 void precalcProfile(FireMode& m) {
   uint32_t t = 0;
@@ -216,6 +221,10 @@ void loadConfig() {
 
   enable_pnh1 = prefs.getBool("en_pnh1", true);
   enable_pnh2 = prefs.getBool("en_pnh2", true);
+
+  configHoldTime = prefs.getUInt("cfg_hold", DEF_CONFIG_HOLD_TIME);
+  sleepTimeoutMs = prefs.getUInt("slp_tout", DEF_SLEEP_TIMEOUT_MS);
+  wakePollIntervalUs = prefs.getUInt("wake_poll", DEF_WAKE_POLL_INTERVAL_US);
 
   precalcTrigger();
   
@@ -339,7 +348,7 @@ void readSelector() {
       safeHolding = true;
       safeHoldStart = micros();
       configToggleDone = false;
-    } else if (!configToggleDone && (micros() - safeHoldStart >= CONFIG_HOLD_TIME)) {
+    } else if (!configToggleDone && (micros() - safeHoldStart >= configHoldTime)) {
       if (configActive) stopBLE();
       else startBLE();
       configToggleDone = true;
@@ -542,7 +551,7 @@ void updateLED() {
 
 // ================= POWER SAVING (LIGHT SLEEP) =================
 void handleLightSleep() {
-  if (selectorState == -1 && (millis() - lastActivityTime > SLEEP_TIMEOUT_MS)) {
+  if (selectorState == -1 && (millis() - lastActivityTime > sleepTimeoutMs)) {
     if (configActive) stopBLE();
     setLED(false);
     setSol1PWM(0);
@@ -554,7 +563,7 @@ void handleLightSleep() {
       delay(100);
     }
     Serial.flush();
-    esp_sleep_enable_timer_wakeup(WAKE_POLL_INTERVAL_US);
+    esp_sleep_enable_timer_wakeup(wakePollIntervalUs);
     while (true) {
       esp_light_sleep_start();
       if (USE_HALL_SELECTOR) analogRead(SELECTOR_HALL_PIN);

@@ -36,7 +36,8 @@ void updateConfigCharacteristic() {
     }
     csv += "," + String(safeVal) + "," + String(mode1Val) + "," + String(mode2Val) + "," +
            String(trigIdleVal) + "," + String(trigMaxVal) + "," + String(trigFirePct) + "," + String(trigRelPct) + "," +
-           String(enable_pnh1 ? 1 : 0) + "," + String(enable_pnh2 ? 1 : 0);
+           String(enable_pnh1 ? 1 : 0) + "," + String(enable_pnh2 ? 1 : 0) + "," +
+           String(configHoldTime) + "," + String(sleepTimeoutMs) + "," + String(wakePollIntervalUs);
            
     if(pConfigCharacteristic != NULL) {
         pConfigCharacteristic->setValue((uint8_t*)csv.c_str(), csv.length());
@@ -157,6 +158,15 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
 
             String pnh2Str = getValue(value, ',', vIdx++);
             if (pnh2Str != "") prefs.putBool("en_pnh2", pnh2Str.toInt() == 1);
+
+            String holdStr = getValue(value, ',', vIdx++);
+            if (holdStr != "") prefs.putUInt("cfg_hold", holdStr.toInt());
+
+            String sleepStr = getValue(value, ',', vIdx++);
+            if (sleepStr != "") prefs.putUInt("slp_tout", sleepStr.toInt());
+
+            String wakeStr = getValue(value, ',', vIdx++);
+            if (wakeStr != "") prefs.putUInt("wake_poll", wakeStr.toInt());
 
             prefs.end();
             loadConfig();
