@@ -1,0 +1,107 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="FCU Electrical">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" connect="1">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ESP32 -->
+        <mxCell id="esp" value="ESP32-C3&#xa;D10&#xa;D3&#xa;D4&#xa;D1&#xa;D2" style="shape=mxgraph.electrical.logic_gates.ic;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="200" y="200" width="120" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- MOSFET dual -->
+        <mxCell id="mos1" value="AO4882 A" style="shape=mxgraph.electrical.transistors.nmos;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="450" y="180" width="80" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mos2" value="AO4882 B" style="shape=mxgraph.electrical.transistors.nmos;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="450" y="300" width="80" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Gate resistors -->
+        <mxCell id="rg1" value="100Ω" style="shape=mxgraph.electrical.resistors.resistor;" vertex="1" parent="1">
+          <mxGeometry x="360" y="200" width="60" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rg2" value="100Ω" style="shape=mxgraph.electrical.resistors.resistor;" vertex="1" parent="1">
+          <mxGeometry x="360" y="320" width="60" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Pull-down -->
+        <mxCell id="rpd1" value="100K" style="shape=mxgraph.electrical.resistors.resistor;" vertex="1" parent="1">
+          <mxGeometry x="450" y="140" width="60" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rpd2" value="100K" style="shape=mxgraph.electrical.resistors.resistor;" vertex="1" parent="1">
+          <mxGeometry x="450" y="420" width="60" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Solenoids -->
+        <mxCell id="sol1" value="Solenoid 1" style="shape=mxgraph.electrical.inductors.inductor;" vertex="1" parent="1">
+          <mxGeometry x="650" y="200" width="100" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sol2" value="Solenoid 2" style="shape=mxgraph.electrical.inductors.inductor;" vertex="1" parent="1">
+          <mxGeometry x="650" y="320" width="100" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Diodes -->
+        <mxCell id="d1" value="" style="shape=mxgraph.electrical.diodes.diode;" vertex="1" parent="1">
+          <mxGeometry x="650" y="150" width="60" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d2" value="" style="shape=mxgraph.electrical.diodes.diode;" vertex="1" parent="1">
+          <mxGeometry x="650" y="270" width="60" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Battery -->
+        <mxCell id="bat" value="Battery +" style="shape=mxgraph.electrical.sources.battery;" vertex="1" parent="1">
+          <mxGeometry x="820" y="200" width="60" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- GND -->
+        <mxCell id="gnd1" style="shape=mxgraph.electrical.grounds.ground;" vertex="1" parent="1">
+          <mxGeometry x="500" y="500" width="40" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- LED -->
+        <mxCell id="led" value="" style="shape=mxgraph.electrical.diodes.led;" vertex="1" parent="1">
+          <mxGeometry x="400" y="450" width="60" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Hall sensors -->
+        <mxCell id="hall1" value="SS49E" style="shape=mxgraph.electrical.logic_gates.ic;" vertex="1" parent="1">
+          <mxGeometry x="80" y="240" width="80" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="hall2" value="SS49E" style="shape=mxgraph.electrical.logic_gates.ic;" vertex="1" parent="1">
+          <mxGeometry x="80" y="340" width="80" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Wires -->
+        <mxCell id="w1" edge="1" parent="1" source="esp" target="rg1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="w2" edge="1" parent="1" source="rg1" target="mos1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="w3" edge="1" parent="1" source="esp" target="rg2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="w4" edge="1" parent="1" source="rg2" target="mos2"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="w5" edge="1" parent="1" source="mos1" target="sol1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="w6" edge="1" parent="1" source="mos2" target="sol2"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="w7" edge="1" parent="1" source="sol1" target="bat"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="w8" edge="1" parent="1" source="sol2" target="bat"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="w9" edge="1" parent="1" source="mos1" target="gnd1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="w10" edge="1" parent="1" source="mos2" target="gnd1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="w11" edge="1" parent="1" source="esp" target="led"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="w12" edge="1" parent="1" source="led" target="gnd1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="w13" edge="1" parent="1" source="hall1" target="esp"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="w14" edge="1" parent="1" source="hall2" target="esp"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
