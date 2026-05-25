@@ -14,7 +14,7 @@ const int TRIGGER_HALL_PIN = D1;
 const int SELECTOR_HALL_PIN = D2;
 
 // ===== CONFIGURATION MODE TOGGLE =====
-const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds (micros)
+const uint32_t CONFIG_HOLD_TIME = 3000000; // 3 seconds (micros)
 
 // ===== PWM CONFIGURATION (ESP32 Core v3.x.x API) =====
 #define PWM_FREQ 20000 // 20kHz
@@ -53,5 +53,9 @@ const uint32_t CONFIG_HOLD_TIME = 5000000; // 5 seconds (micros)
 #define SERVICE_UUID           "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CONFIG_CHAR_UUID       "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 #define STATE_CHAR_UUID        "1c9441a1-f3b1-4f16-8eb5-7c37a6b72a6b"
+
+// ===== POWER SAVING =====
+#define SLEEP_TIMEOUT_MS       120000 // 2 minutes
+#define WAKE_POLL_INTERVAL_US  400000 // 400ms
 
 #endif

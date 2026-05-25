@@ -318,6 +318,17 @@
 
         /* ─── Hidden ──────────────────────────────────── */
         #config-form { display: none; }
+
+        /* ─── Toggle Switch ───────────────────────────── */
+        .switch-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+        .switch-row:last-child { border-bottom: none; }
+        .switch-label { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); border: 1px solid var(--border2); transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: var(--text-muted); transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background: rgba(0, 230, 118, 0.15); border-color: var(--green); }
+        input:checked + .slider:before { transform: translateX(16px); background: var(--green); box-shadow: var(--glow-green); }
     </style>
 </head>
 <body>
@@ -439,6 +450,18 @@
             <div id="profiles-container"></div>
         </div>
 
+        <div class="section-label">Others</div>
+        <div class="card" style="margin-bottom:12px">
+            <div class="switch-row">
+                <span class="switch-label">Solenoid 1 Peak & Hold</span>
+                <label class="switch"><input type="checkbox" id="en_pnh1" checked><span class="slider"></span></label>
+            </div>
+            <div class="switch-row">
+                <span class="switch-label">Solenoid 2 Peak & Hold</span>
+                <label class="switch"><input type="checkbox" id="en_pnh2" checked><span class="slider"></span></label>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -459,14 +482,14 @@ const PROFILE_COUNT = 5;
 
 const SOL1_FIELDS = [
     { key: "s1", label: "Open (µs)" },
-    { key: "p1", label: "Peak (µs)" },
-    { key: "h1", label: "Hold PWM (%)", min: 0, max: 100 },
+    { key: "p1", label: "Peak (µs)", isPnH: true },
+    { key: "h1", label: "Hold PWM (%)", min: 0, max: 100, isPnH: true },
     { key: "d1", label: "Delay After (µs)" },
 ];
 const SOL2_FIELDS = [
     { key: "s2", label: "Open (µs)" },
-    { key: "p2", label: "Peak (µs)" },
-    { key: "h2", label: "Hold PWM (%)", min: 0, max: 100 },
+    { key: "p2", label: "Peak (µs)", isPnH: true },
+    { key: "h2", label: "Hold PWM (%)", min: 0, max: 100, isPnH: true },
     { key: "d2", label: "Delay After (µs)" },
 ];
 const ROUND_FIELDS = [
@@ -540,9 +563,10 @@ function buildUI() {
                             <span class="sol-block-title">SOLENOID 1</span>
                         </div>
                         <div class="sol-block-body">
-                            ${SOL1_FIELDS.map(({key, label, min, max}) => {
+                            ${SOL1_FIELDS.map(({key, label, min, max, isPnH}) => {
                                 const extra = min !== undefined ? `min="${min}" max="${max}"` : "";
-                                return `<div class="field"><label>${label}</label><input type="number" id="${fid(i,key)}" ${extra}></div>`;
+                                const wrapId = isPnH ? ` id="wrap_${fid(i,key)}"` : "";
+                                return `<div class="field"${wrapId}><label>${label}</label><input type="number" id="${fid(i,key)}" ${extra}></div>`;
                             }).join("")}
                         </div>
                     </div>
@@ -552,9 +576,10 @@ function buildUI() {
                             <span class="sol-block-title">SOLENOID 2</span>
                         </div>
                         <div class="sol-block-body">
-                            ${SOL2_FIELDS.map(({key, label, min, max}) => {
+                            ${SOL2_FIELDS.map(({key, label, min, max, isPnH}) => {
                                 const extra = min !== undefined ? `min="${min}" max="${max}"` : "";
-                                return `<div class="field"><label>${label}</label><input type="number" id="${fid(i,key)}" ${extra}></div>`;
+                                const wrapId = isPnH ? ` id="wrap_${fid(i,key)}"` : "";
+                                return `<div class="field"${wrapId}><label>${label}</label><input type="number" id="${fid(i,key)}" ${extra}></div>`;
                             }).join("")}
                         </div>
                     </div>
@@ -648,7 +673,9 @@ function takeSnapshot() {
             ALL_FIELDS.map(({ key }) => fel(i, key).value)
         ).flat(),
         $("trig_fire_pct").value,
-        $("trig_rel_pct").value
+        $("trig_rel_pct").value,
+        $("en_pnh1").checked ? 1 : 0,
+        $("en_pnh2").checked ? 1 : 0
     ].join(",");
 }
 
@@ -659,8 +686,21 @@ function checkDirty() {
     $("save-hint").innerHTML = dirty ? `<span class="badge-unsaved">UNSAVED</span>` : "";
 }
 
+function togglePnH() {
+    const en1 = $("en_pnh1").checked;
+    const en2 = $("en_pnh2").checked;
+    for (let i = 0; i < PROFILE_COUNT; i++) {
+        const w_p1 = $("wrap_" + fid(i, "p1")); if(w_p1) w_p1.style.display = en1 ? "flex" : "none";
+        const w_h1 = $("wrap_" + fid(i, "h1")); if(w_h1) w_h1.style.display = en1 ? "flex" : "none";
+        const w_p2 = $("wrap_" + fid(i, "p2")); if(w_p2) w_p2.style.display = en2 ? "flex" : "none";
+        const w_h2 = $("wrap_" + fid(i, "h2")); if(w_h2) w_h2.style.display = en2 ? "flex" : "none";
+    }
+}
+
 function attachChangeListeners() {
     ["slot0", "slot1", "trig_fire_pct", "trig_rel_pct"].forEach(id => $(id).addEventListener("change", checkDirty));
+    $("en_pnh1").addEventListener("change", togglePnH);
+    $("en_pnh2").addEventListener("change", togglePnH);
     for (let i = 0; i < PROFILE_COUNT; i++) {
         for (const { key } of ALL_FIELDS) {
             fel(i, key).addEventListener("input", checkDirty);
@@ -693,6 +733,11 @@ async function readConfigs() {
         const r4 = $("calRes4"); if(r4) r4.textContent = `[ ${vals[idx+4]} ]`;
         const r5 = $("trig_fire_pct"); if(r5) r5.value = vals[idx+5];
         const r6 = $("trig_rel_pct"); if(r6) r6.value = vals[idx+6];
+
+        $("en_pnh1").checked = (vals.length > idx+7) ? (vals[idx+7] === "1") : true;
+        $("en_pnh2").checked = (vals.length > idx+8) ? (vals[idx+8] === "1") : true;
+
+        togglePnH();
     }
 
     updateOverview();

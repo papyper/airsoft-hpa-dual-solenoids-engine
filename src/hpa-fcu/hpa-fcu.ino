@@ -1,5 +1,6 @@
 #include <Preferences.h>
 #include "configs.h"
+#include <esp_sleep.h>
 
 bool configActive = false;
 uint32_t safeHoldStart = 0;
@@ -46,6 +47,7 @@ enum FCUState {
 FCUState fcuState = S_IDLE;
 
 uint32_t shotCount = 0;
+uint32_t lastActivityTime = 0;
 
 // ===== FIRING VARIABLES =====
 uint32_t tStart = 0;
@@ -82,6 +84,10 @@ int trigMaxVal = DEF_TRIG_MAX;
 int trigFirePct = DEF_TRIG_FIRE_PCT;
 int trigRelPct = DEF_TRIG_REL_PCT;
 
+// ===== PEAK & HOLD CONFIGS =====
+bool enable_pnh1 = false;
+bool enable_pnh2 = false;
+
 // ===== CALIBRATION VARIABLES =====
 volatile int calibState = -1;
 volatile uint32_t calibStartTime = 0;
@@ -105,6 +111,7 @@ void precalcProfile(FireMode& m) {
 
   if (m.sol1_open > 0) {
     uint32_t actual_sol1_peak = (m.sol1_peak > m.sol1_open) ? m.sol1_open : m.sol1_peak;
+    if (!enable_pnh1) actual_sol1_peak = m.sol1_open;
     m.t_sol1_peak_end = t + actual_sol1_peak;
     t += m.sol1_open;
     m.t_sol1_off = t;
@@ -119,6 +126,7 @@ void precalcProfile(FireMode& m) {
 
   if (m.sol2_open > 0) {
     uint32_t actual_sol2_peak = (m.sol2_peak > m.sol2_open) ? m.sol2_open : m.sol2_peak;
+    if (!enable_pnh2) actual_sol2_peak = m.sol2_open;
     m.t_sol2_peak_end = t + actual_sol2_peak;
     t += m.sol2_open;
     m.t_sol2_off = t;
@@ -205,6 +213,9 @@ void loadConfig() {
   trigMaxVal = prefs.getInt("th_max", DEF_TRIG_MAX);
   trigFirePct = prefs.getInt("th_fpct", DEF_TRIG_FIRE_PCT);
   trigRelPct = prefs.getInt("th_rpct", DEF_TRIG_REL_PCT);
+
+  enable_pnh1 = prefs.getBool("en_pnh1", true);
+  enable_pnh2 = prefs.getBool("en_pnh2", true);
 
   precalcTrigger();
   
@@ -308,6 +319,7 @@ void handleHallSelector() {
 // ================= SELECTOR MASTER =================
 void readSelector() {
   bool safe = false;
+  int oldState = selectorState;
 
   if (!USE_HALL_SELECTOR) {
     safe = (digitalRead(SAFE_PIN) == LOW);
@@ -316,6 +328,10 @@ void readSelector() {
   } else {
     handleHallSelector();
     safe = (selectorState == -1);
+  }
+
+  if (selectorState != oldState) {
+      lastActivityTime = millis();
   }
 
   if (safe && (physicalTriggerState == HIGH || triggerState == HIGH)) {
@@ -369,6 +385,7 @@ void readTrigger() {
   
   if ((micros() - lastDebounce) > TRIGGER_DEBOUNCE_MICROS) {
     if (isPulled != triggerState) {
+      lastActivityTime = millis();
       bool risingEdge = (isPulled == true && triggerState == false);
       bool fallingEdge = (isPulled == false && triggerState == true);
       
@@ -523,6 +540,34 @@ void updateLED() {
   }
 }
 
+// ================= POWER SAVING (LIGHT SLEEP) =================
+void handleLightSleep() {
+  if (selectorState == -1 && (millis() - lastActivityTime > SLEEP_TIMEOUT_MS)) {
+    if (configActive) stopBLE();
+    setLED(false);
+    setSol1PWM(0);
+    setSol2PWM(0);
+    for (int i = 0; i < 3; i++) {
+      setLED(true);
+      delay(100);
+      setLED(false);
+      delay(100);
+    }
+    Serial.flush();
+    esp_sleep_enable_timer_wakeup(WAKE_POLL_INTERVAL_US);
+    while (true) {
+      esp_light_sleep_start();
+      if (USE_HALL_SELECTOR) analogRead(SELECTOR_HALL_PIN);
+      hallInitialized = false; 
+      readSelector();
+      if (selectorState != -1) {
+        lastActivityTime = millis();
+        break;
+      }
+    }
+  }
+}
+
 // ================= MAIN SETUP & LOOP =================
 void setup() {
   Serial.begin(115200);
@@ -552,7 +597,11 @@ void loop() {
   readSelector();
   updateLED();
 
-  if (configActive) sendLiveStatesBLE();
+  if (configActive) {
+    sendLiveStatesBLE();
+  } else {
+    handleLightSleep();
+  }
 
   if (selectorState == -1) {
     fcuState = S_IDLE; 

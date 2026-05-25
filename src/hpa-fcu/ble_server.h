@@ -35,7 +35,8 @@ void updateConfigCharacteristic() {
                String(m.round_per_second);
     }
     csv += "," + String(safeVal) + "," + String(mode1Val) + "," + String(mode2Val) + "," +
-           String(trigIdleVal) + "," + String(trigMaxVal) + "," + String(trigFirePct) + "," + String(trigRelPct);
+           String(trigIdleVal) + "," + String(trigMaxVal) + "," + String(trigFirePct) + "," + String(trigRelPct) + "," +
+           String(enable_pnh1 ? 1 : 0) + "," + String(enable_pnh2 ? 1 : 0);
            
     if(pConfigCharacteristic != NULL) {
         pConfigCharacteristic->setValue((uint8_t*)csv.c_str(), csv.length());
@@ -151,6 +152,12 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
             if (tf > 0) prefs.putInt("th_fpct", tf); 
             if (tr > 0) prefs.putInt("th_rpct", tr);
 
+            String pnh1Str = getValue(value, ',', vIdx++);
+            if (pnh1Str != "") prefs.putBool("en_pnh1", pnh1Str.toInt() == 1);
+
+            String pnh2Str = getValue(value, ',', vIdx++);
+            if (pnh2Str != "") prefs.putBool("en_pnh2", pnh2Str.toInt() == 1);
+
             prefs.end();
             loadConfig();
             updateConfigCharacteristic();
@@ -166,7 +173,9 @@ class ServerCallbacks: public NimBLEServerCallbacks {
 
   void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
     deviceConnected = false;
-    NimBLEDevice::startAdvertising(); 
+    if (configActive) {
+        NimBLEDevice::startAdvertising(); 
+    }
   }
 };
 
@@ -217,20 +226,18 @@ void stopBLE() {
   setLED(false);
   logicalLedState = false;
   ledBlinkCount = 0;
+  
   if (bleInitialized) {
+      NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+      if (pAdvertising != nullptr) {
+          pAdvertising->stop();
+      }
       if (pServer != NULL) {
           std::vector<uint16_t> clients = pServer->getPeerDevices();
           for (size_t i = 0; i < clients.size(); i++) {
               pServer->disconnect(clients[i]);
           }
       }
-      NimBLEDevice::getAdvertising()->stop();
-      delay(50);
-      NimBLEDevice::deinit(true); 
-      pServer = NULL;
-      pConfigCharacteristic = NULL;
-      pStateCharacteristic = NULL;
-      bleInitialized = false; 
   }
   
   deviceConnected = false;
