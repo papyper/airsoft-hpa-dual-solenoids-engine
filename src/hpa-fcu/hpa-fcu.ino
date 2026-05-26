@@ -1,6 +1,7 @@
 #include <Preferences.h>
 #include "configs.h"
 #include <esp_sleep.h>
+#include <driver/gpio.h>
 
 bool configActive = false;
 uint32_t safeHoldStart = 0;
@@ -165,25 +166,72 @@ void precalcTrigger() {
 
 
 // ================= HARDWARE WRITERS =================
-void setSol1PWM(int pwm) {
-  if (sol1CurrentPwm != pwm) { 
+void (*setSol1PWM)(int pwm);
+void (*setSol2PWM)(int pwm);
+
+void writeSol1_PWM(int pwm) {
+  if (sol1CurrentPwm != pwm) {
     sol1CurrentPwm = pwm;
-    ledcWrite(SOL1_PIN, pwm); 
+    ledcWrite(SOL1_PIN, pwm);
   }
 }
 
-void setSol2PWM(int pwm) {
-  if (sol2CurrentPwm != pwm) { 
+void writeSol1_GPIO(int pwm) {
+  if (sol1CurrentPwm != pwm) {
+    sol1CurrentPwm = pwm;
+    gpio_set_level((gpio_num_t)SOL1_PIN, pwm ? 1 : 0);
+  }
+}
+
+void writeSol2_PWM(int pwm) {
+  if (sol2CurrentPwm != pwm) {
     sol2CurrentPwm = pwm;
-    ledcWrite(SOL2_PIN, pwm); 
+    ledcWrite(SOL2_PIN, pwm);
+  }
+}
+
+void writeSol2_GPIO(int pwm) {
+  if (sol2CurrentPwm != pwm) {
+    sol2CurrentPwm = pwm;
+    gpio_set_level((gpio_num_t)SOL2_PIN, pwm ? 1 : 0);
   }
 }
 
 void setLED(bool on) {
-  if (hardwareLedState != on) { 
-    hardwareLedState = on; 
-    digitalWrite(LED_PIN, on); 
+  if (hardwareLedState != on) {
+    hardwareLedState = on;
+    gpio_set_level((gpio_num_t)LED_PIN, on ? 1 : 0);
   }
+}
+
+void applyHardwareRouting() {
+  // --- Solenoid 1 ---
+  if (enable_pnh1) {
+    ledcAttach(SOL1_PIN, PWM_FREQ, PWM_RES);
+    ledcWrite(SOL1_PIN, 0);
+    setSol1PWM = writeSol1_PWM;
+  } else {
+    ledcDetach(SOL1_PIN);
+    gpio_reset_pin((gpio_num_t)SOL1_PIN);
+    gpio_set_direction((gpio_num_t)SOL1_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level((gpio_num_t)SOL1_PIN, 0);
+    setSol1PWM = writeSol1_GPIO;
+  }
+  sol1CurrentPwm = 0; // Reset state
+
+  // --- Solenoid 2 ---
+  if (enable_pnh2) {
+    ledcAttach(SOL2_PIN, PWM_FREQ, PWM_RES);
+    ledcWrite(SOL2_PIN, 0);
+    setSol2PWM = writeSol2_PWM;
+  } else {
+    ledcDetach(SOL2_PIN);
+    gpio_reset_pin((gpio_num_t)SOL2_PIN);
+    gpio_set_direction((gpio_num_t)SOL2_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level((gpio_num_t)SOL2_PIN, 0);
+    setSol2PWM = writeSol2_GPIO;
+  }
+  sol2CurrentPwm = 0; // Reset state
 }
 
 // ================= CONFIGURATION =================
@@ -227,6 +275,8 @@ void loadConfig() {
   wakePollIntervalUs = prefs.getUInt("wake_poll", DEF_WAKE_POLL_INTERVAL_US);
 
   precalcTrigger();
+
+  applyHardwareRouting();
   
   prefs.end();
 }
@@ -581,17 +631,14 @@ void handleLightSleep() {
 void setup() {
   Serial.begin(115200);
 
-  ledcAttach(SOL1_PIN, PWM_FREQ, PWM_RES);
-  ledcAttach(SOL2_PIN, PWM_FREQ, PWM_RES);
-  ledcWrite(SOL1_PIN, 0); 
-  ledcWrite(SOL2_PIN, 0);
-
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
   pinMode(MODE_PIN, INPUT_PULLUP);
   pinMode(SAFE_PIN, INPUT_PULLUP);
-  pinMode(LED_PIN, OUTPUT);
   pinMode(TRIGGER_HALL_PIN, INPUT);
   pinMode(SELECTOR_HALL_PIN, INPUT);
+
+  gpio_reset_pin((gpio_num_t)LED_PIN);
+  gpio_set_direction((gpio_num_t)LED_PIN, GPIO_MODE_OUTPUT);
 
   loadConfig();
 }
