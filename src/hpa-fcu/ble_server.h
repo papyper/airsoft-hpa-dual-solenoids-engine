@@ -9,7 +9,30 @@ NimBLECharacteristic* pStateCharacteristic = NULL;
 bool deviceConnected = false; 
 bool bleInitialized = false;
 
-// Helper function to split CSV strings
+String makeUUID(String baseStr, String id, String pwd) {
+    String str = id + pwd;
+    String cleanBase = baseStr;
+    cleanBase.replace("-", "");
+    uint8_t bytes[16];
+    for (int i = 0; i < 16; i++) {
+        String hexByte = cleanBase.substring(i * 2, i * 2 + 2);
+        bytes[i] = (uint8_t)strtol(hexByte.c_str(), NULL, 16);
+    }
+    for (int i = 0; i < str.length(); i++) {
+        uint8_t c = str.charAt(i);
+        bytes[i % 16] = (bytes[i % 16] ^ c) & 0xFF;
+        bytes[(i + 1) % 16] = (bytes[(i + 1) % 16] + c) & 0xFF;
+    }
+    char hex[37];
+    sprintf(hex, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+            bytes[0], bytes[1], bytes[2], bytes[3],
+            bytes[4], bytes[5],
+            bytes[6], bytes[7],
+            bytes[8], bytes[9],
+            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+    return String(hex);
+}
+
 String getValue(String data, char separator, int index) {
   int found = 0;
   int strIndex[] = { 0, -1 };
@@ -37,7 +60,8 @@ void updateConfigCharacteristic() {
     csv += "," + String(safeVal) + "," + String(mode1Val) + "," + String(mode2Val) + "," +
            String(trigIdleVal) + "," + String(trigMaxVal) + "," + String(trigFirePct) + "," + String(trigRelPct) + "," +
            String(enable_pnh1 ? 1 : 0) + "," + String(enable_pnh2 ? 1 : 0) + "," +
-           String(configHoldTime) + "," + String(sleepTimeoutMs) + "," + String(wakePollIntervalUs);
+           String(configHoldTime) + "," + String(sleepTimeoutMs) + "," + String(wakePollIntervalUs) + "," + 
+           fcuPwd;
            
     if(pConfigCharacteristic != NULL) {
         pConfigCharacteristic->setValue((uint8_t*)csv.c_str(), csv.length());
@@ -105,11 +129,10 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
             Serial.print("BLE Received: ");
             Serial.println(value);
 
-            // Intercept Hall Sensor Calibration command
             if (value.startsWith("CAL,")) {
                 int stateToCalibrate = value.substring(4).toInt();
                 startCalibration(stateToCalibrate); 
-                return; // Stop here, do not proceed to saving profiles
+                return;
             }
 
             if (value == "RST_CNT") {
@@ -118,7 +141,6 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
                 return;
             }
 
-            // Normal Profile Saving
             prefs.begin(PREF_NAME, false);
             
             modeSlot[0] = getValue(value, ',', 0).toInt();
@@ -130,19 +152,16 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
             for (int i = 0; i < PROFILE_COUNT; i++) {
                 String p = "p" + String(i);
                 
-                // Solenoid 1
                 prefs.putUInt((p+"s1").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 prefs.putUInt((p+"p1").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 prefs.putInt((p+"h1").c_str(), getValue(value, ',', vIdx++).toInt());  
                 prefs.putUInt((p+"d1").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 
-                // Solenoid 2
                 prefs.putUInt((p+"s2").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 prefs.putUInt((p+"p2").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 prefs.putInt((p+"h2").c_str(), getValue(value, ',', vIdx++).toInt());  
                 prefs.putUInt((p+"d2").c_str(), getValue(value, ',', vIdx++).toInt()); 
                 
-                // Firing Mode
                 prefs.putInt((p+"rpt").c_str(), getValue(value, ',', vIdx++).toInt());
                 prefs.putInt((p+"rptr").c_str(), getValue(value, ',', vIdx++).toInt());
                 prefs.putInt((p+"rps").c_str(), getValue(value, ',', vIdx++).toInt());
@@ -167,6 +186,12 @@ class ConfigCallbacks: public NimBLECharacteristicCallbacks {
 
             String wakeStr = getValue(value, ',', vIdx++);
             if (wakeStr != "") prefs.putUInt("wake_poll", wakeStr.toInt());
+
+            String pwdStr = getValue(value, ',', vIdx++);
+            if (pwdStr != "") {
+                prefs.putString("fcu_pwd", pwdStr);
+                fcuPwd = pwdStr;
+            }
 
             prefs.end();
             loadConfig();
@@ -194,24 +219,28 @@ ServerCallbacks serverCallbacksInst;
 
 void startBLE() {
   if (!bleInitialized) {
-      NimBLEDevice::init(BLE_NAME);
+      NimBLEDevice::init(BLE_NAME "_" DEF_FCU_ID);
       NimBLEDevice::setMTU(512);
       NimBLEDevice::setPower(ESP_PWR_LVL_P9); 
 
       pServer = NimBLEDevice::createServer();
       pServer->setCallbacks(&serverCallbacksInst);
+      
+      String srvUUID = makeUUID(SERVICE_UUID_BASE, DEF_FCU_ID, fcuPwd);
+      String cfgUUID = makeUUID(CONFIG_CHAR_UUID_BASE, DEF_FCU_ID, fcuPwd);
+      String sttUUID = makeUUID(STATE_CHAR_UUID_BASE, DEF_FCU_ID, fcuPwd);
 
-      NimBLEService *pService = pServer->createService(SERVICE_UUID);
+      NimBLEService *pService = pServer->createService(srvUUID.c_str());
 
       pConfigCharacteristic = pService->createCharacteristic(
-                                   CONFIG_CHAR_UUID,
+                                   cfgUUID.c_str(),
                                    NIMBLE_PROPERTY::READ |
                                    NIMBLE_PROPERTY::WRITE
                                  );
       pConfigCharacteristic->setCallbacks(&configCallbacksInst);
 
       pStateCharacteristic = pService->createCharacteristic(
-                                   STATE_CHAR_UUID,
+                                   sttUUID.c_str(),
                                    NIMBLE_PROPERTY::READ | 
                                    NIMBLE_PROPERTY::NOTIFY
                                  );
@@ -221,12 +250,15 @@ void startBLE() {
 
       pService->start();
       bleInitialized = true;
+      
+      NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+      pAdvertising->setName(BLE_NAME "_" DEF_FCU_ID);
+      pAdvertising->addServiceUUID(srvUUID.c_str());
+      pAdvertising->start(); 
+  } else {
+      NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+      pAdvertising->start(); 
   }
-
-  NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
-  pAdvertising->setName(BLE_NAME);
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->start(); 
   
   configActive = true; 
 }
@@ -252,6 +284,5 @@ void stopBLE() {
   
   deviceConnected = false;
 }
-
 
 #endif

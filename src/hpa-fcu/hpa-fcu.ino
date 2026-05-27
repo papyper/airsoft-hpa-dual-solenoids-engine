@@ -3,6 +3,7 @@
 #include <esp_sleep.h>
 #include <driver/gpio.h>
 
+String fcuPwd = DEF_FCU_PWD;
 bool configActive = false;
 uint32_t safeHoldStart = 0;
 bool safeHolding = false;
@@ -24,7 +25,6 @@ struct FireMode {
   int round_per_trigger_release;
   int round_per_second;
 
-  // ----- PRECALC VARIABLES -----
   int sol1_hold_pwm_8bit;
   int sol2_hold_pwm_8bit;
 
@@ -40,7 +40,6 @@ struct FireMode {
 FireMode profiles[PROFILE_COUNT];
 int modeSlot[2] = {0, 1};
 
-// ===== STATE MACHINE =====
 enum FCUState { 
   S_IDLE, S_SOL1_PEAK, S_SOL1_HOLD, S_WAIT_SOL2, 
   S_SOL2_PEAK, S_SOL2_HOLD, S_WAIT_CYCLE_END 
@@ -50,7 +49,6 @@ FCUState fcuState = S_IDLE;
 uint32_t shotCount = 0;
 uint32_t lastActivityTime = 0;
 
-// ===== FIRING VARIABLES =====
 uint32_t tStart = 0;
 FireMode* currentMode;
 int shotsRemaining = 0;
@@ -58,12 +56,10 @@ int trigFireThreshold = 0;
 int trigRelThreshold = 0;
 bool trigInverted = false;
 
-// ===== HARDWARE OUTPUT CACHE =====
 int sol1CurrentPwm = -1; 
 int sol2CurrentPwm = -1;
 bool hardwareLedState = false;
 
-// ===== TRIGGER DEBOUNCE =====
 bool physicalTriggerState = LOW;
 bool triggerState = LOW;
 bool lastTriggerState = LOW;
@@ -71,25 +67,20 @@ bool triggerEdge = false;
 bool pendingReleaseFire = false; 
 uint32_t lastDebounce = 0;
 
-// ===== SELECTOR (HALL & SWITCH) =====
-int selectorState = -1; // -1: safe, 0: mode 0, 1: mode 1
+int selectorState = -1; 
 
-// Hall Sensor Calibration Centers (Nearest Neighbor)
 int safeVal = DEF_HALL_SAFE;
 int mode1Val = DEF_HALL_MODE1;
 int mode2Val = DEF_HALL_MODE2;
 
-// ===== TRIGGER HALL CALIBRATION & STATE =====
 int trigIdleVal = DEF_TRIG_IDLE;
 int trigMaxVal = DEF_TRIG_MAX;
 int trigFirePct = DEF_TRIG_FIRE_PCT;
 int trigRelPct = DEF_TRIG_REL_PCT;
 
-// ===== PEAK & HOLD CONFIGS =====
 bool enable_pnh1 = false;
 bool enable_pnh2 = false;
 
-// ===== CALIBRATION VARIABLES =====
 volatile int calibState = -1;
 volatile uint32_t calibStartTime = 0;
 volatile long calibSum = 0;
@@ -97,18 +88,15 @@ volatile int calibSamples = 0;
 int filteredHall = 0;
 bool hallInitialized = false;
 
-// ===== LED TIMERS =====
 uint32_t ledTimer = 0;
 uint32_t ledPauseTimer = 0;
 int ledBlinkCount = 0;
 bool logicalLedState = false;
 
-// ===== SYSTEM CONFIG VARIABLES =====
 uint32_t configHoldTime = DEF_CONFIG_HOLD_TIME;
 uint32_t sleepTimeoutMs = DEF_SLEEP_TIMEOUT_MS;
 uint32_t wakePollIntervalUs = DEF_WAKE_POLL_INTERVAL_US;
 
-// ================= PRE-CALCULATOR =================
 void precalcProfile(FireMode& m) {
   uint32_t t = 0;
   
@@ -164,8 +152,6 @@ void precalcTrigger() {
   trigRelThreshold  = trigIdleVal + (range * trigRelPct) / 100;
 }
 
-
-// ================= HARDWARE WRITERS =================
 void (*setSol1PWM)(int pwm);
 void (*setSol2PWM)(int pwm);
 
@@ -205,7 +191,6 @@ void setLED(bool on) {
 }
 
 void applyHardwareRouting() {
-  // --- Solenoid 1 ---
   if (enable_pnh1) {
     ledcAttach(SOL1_PIN, PWM_FREQ, PWM_RES);
     ledcWrite(SOL1_PIN, 0);
@@ -217,9 +202,8 @@ void applyHardwareRouting() {
     gpio_set_level((gpio_num_t)SOL1_PIN, 0);
     setSol1PWM = writeSol1_GPIO;
   }
-  sol1CurrentPwm = 0; // Reset state
+  sol1CurrentPwm = 0; 
 
-  // --- Solenoid 2 ---
   if (enable_pnh2) {
     ledcAttach(SOL2_PIN, PWM_FREQ, PWM_RES);
     ledcWrite(SOL2_PIN, 0);
@@ -231,12 +215,12 @@ void applyHardwareRouting() {
     gpio_set_level((gpio_num_t)SOL2_PIN, 0);
     setSol2PWM = writeSol2_GPIO;
   }
-  sol2CurrentPwm = 0; // Reset state
+  sol2CurrentPwm = 0; 
 }
 
-// ================= CONFIGURATION =================
 void loadConfig() {
   prefs.begin(PREF_NAME, true);
+
   for (int i = 0; i < PROFILE_COUNT; i++) {
     String p = "p" + String(i);
     profiles[i].sol1_open = prefs.getUInt((p+"s1").c_str(), 30000);
@@ -273,6 +257,8 @@ void loadConfig() {
   configHoldTime = prefs.getUInt("cfg_hold", DEF_CONFIG_HOLD_TIME);
   sleepTimeoutMs = prefs.getUInt("slp_tout", DEF_SLEEP_TIMEOUT_MS);
   wakePollIntervalUs = prefs.getUInt("wake_poll", DEF_WAKE_POLL_INTERVAL_US);
+  
+  fcuPwd = prefs.getString("fcu_pwd", DEF_FCU_PWD);
 
   precalcTrigger();
 
@@ -283,7 +269,6 @@ void loadConfig() {
 
 #include "ble_server.h"
 
-// ================= (CALIBRATION) =================
 void startCalibration(int stateIndex) {
   if (calibState != -1) return; 
   
@@ -298,7 +283,7 @@ void startCalibration(int stateIndex) {
 
 void handleHallCalibration() {
   static uint32_t lastCalibRead = 0;
-  if (millis() - lastCalibRead < 10) return; // Sample every 10ms
+  if (millis() - lastCalibRead < 10) return;
   lastCalibRead = millis();
 
   int pin = (calibState == 3 || calibState == 4) ? TRIGGER_HALL_PIN : SELECTOR_HALL_PIN;
@@ -309,19 +294,19 @@ void handleHallCalibration() {
     int finalVal = (calibSamples > 0) ? (calibSum / calibSamples) : analogRead(pin);
 
     prefs.begin(PREF_NAME, false);
-    if (calibState == 0) { // Safe
+    if (calibState == 0) { 
       safeVal = finalVal;
       prefs.putInt("hs_val", finalVal);
-    } else if (calibState == 1) { // Mode 1
+    } else if (calibState == 1) { 
       mode1Val = finalVal;
       prefs.putInt("hm1_val", finalVal);
-    } else if (calibState == 2) { // Mode 2
+    } else if (calibState == 2) { 
       mode2Val = finalVal;
       prefs.putInt("hm2_val", finalVal);
-    } else if (calibState == 3) { // Trigger Idle
+    } else if (calibState == 3) { 
       trigIdleVal = finalVal;
       prefs.putInt("th_idle", finalVal);
-    } else if (calibState == 4) { // Trigger Full
+    } else if (calibState == 4) { 
       trigMaxVal = finalVal;
       prefs.putInt("th_max", finalVal);
     }
@@ -341,7 +326,6 @@ void handleHallCalibration() {
   }
 }
 
-// ================= (NORMAL OPERATION) =================
 void handleHallSelector() {
   int raw = analogRead(SELECTOR_HALL_PIN);
 
@@ -375,7 +359,6 @@ void handleHallSelector() {
   else selectorState = 1;
 }
 
-// ================= SELECTOR MASTER =================
 void readSelector() {
   bool safe = false;
   int oldState = selectorState;
@@ -406,7 +389,6 @@ void readSelector() {
   } else safeHolding = false;
 }
 
-// ================= TRIGGER LOGIC =================
 void readTrigger() {
   bool physicalReading = !digitalRead(TRIGGER_PIN);
   
@@ -458,7 +440,6 @@ void readTrigger() {
   lastTriggerState = isPulled;
 }
 
-// ================= FIRING STATE MACHINE =================
 void startFire(FireMode* m, int shots) {
   currentMode = m;
   shotsRemaining = shots;
@@ -558,7 +539,6 @@ void updateFire() {
   }
 }
 
-// ================= LED INDICATORS =================
 void updateLED() {
   uint32_t now = millis();
   
@@ -599,7 +579,6 @@ void updateLED() {
   }
 }
 
-// ================= POWER SAVING (LIGHT SLEEP) =================
 void handleLightSleep() {
   if (selectorState == -1 && (millis() - lastActivityTime > sleepTimeoutMs)) {
     if (configActive) stopBLE();
@@ -627,7 +606,6 @@ void handleLightSleep() {
   }
 }
 
-// ================= MAIN SETUP & LOOP =================
 void setup() {
   Serial.begin(115200);
 

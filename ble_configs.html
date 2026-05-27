@@ -23,16 +23,13 @@
             --orange:    #ffa726;
             --yellow:    #ffee00;
             --text:      #dce8f5;
-            --text-dim:  #5e7a99;
-            --text-muted:#3a5570;
+            --dim:       #5e7a99;
+            --muted:     #3a5570;
             --mono:      'IBM Plex Mono', monospace;
             --sans:      'IBM Plex Sans', sans-serif;
-            --glow:      0 0 20px rgba(0,180,255,0.15);
-            --glow-green:0 0 16px rgba(0,230,118,0.3);
         }
 
         html { scroll-behavior: smooth; }
-
         body {
             font-family: var(--sans);
             background: var(--bg);
@@ -40,19 +37,16 @@
             min-height: 100vh;
             padding: 0 0 100px;
         }
-
         body::before {
-            content:'';
-            position:fixed; inset:0; z-index:999; pointer-events:none;
+            content:''; position:fixed; inset:0; z-index:999; pointer-events:none;
             background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px);
         }
 
         .container { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 
-        /* ─── Header ── */
+        /* HEADER */
         header {
-            padding: 18px 0 16px;
-            margin-bottom: 18px;
+            padding: 18px 0 16px; margin-bottom: 18px;
             border-bottom: 1px solid var(--border);
             display: flex; align-items: center; gap: 16px;
         }
@@ -62,291 +56,199 @@
             border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             font-size: 20px;
-            box-shadow: var(--glow);
         }
-        .header-text h1 {
-            font-family: var(--mono);
-            font-size: 15px; font-weight: 700;
-            letter-spacing: 2px;
-            color: var(--accent);
-        }
-        .header-text p {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-            margin-top: 2px;
-        }
-        .header-spacer { flex: 1; }
+        .header-text h1 { font-family: var(--mono); font-size: 15px; font-weight: 700; letter-spacing: 2px; color: var(--accent); }
+        .header-text p  { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
         .fw-tag {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--text-muted);
-            border: 1px solid var(--border2);
-            border-radius: 4px;
-            padding: 3px 8px;
-            letter-spacing: 1px;
+            margin-left: auto;
+            font-family: var(--mono); font-size: 10px; color: var(--muted);
+            border: 1px solid var(--border2); border-radius: 4px; padding: 3px 8px; letter-spacing: 1px;
         }
 
-        /* ─── Status Bar ── */
+        /* STATUS BAR */
         .status-bar {
             display: flex; align-items: center; gap: 10px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 14px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
         }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; transition: background .3s; }
-        .status-dot.connected  { background: var(--green); box-shadow: var(--glow-green); animation: pulse-dot 2.5s infinite; }
-        .status-dot.connecting { background: var(--orange); animation: blink-dot 0.6s infinite; }
-        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
-        @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.15} }
-        #status-msg { font-family: var(--mono); font-size: 11px; color: var(--text-dim); flex: 1; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .3s; }
+        .status-dot.connected  { background: var(--green); animation: pulse 2.5s infinite; }
+        .status-dot.connecting { background: var(--orange); animation: blink .6s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+        #status-msg { font-family: var(--mono); font-size: 11px; color: var(--dim); flex: 1; }
+
+        .auth-input {
+            width: 75px; background: var(--bg2); color: var(--text);
+            border: 1px solid var(--border2); border-radius: 5px;
+            padding: 6px 8px; font-family: var(--mono); font-size: 11px; text-align: center;
+        }
+        .auth-input:focus { outline: none; border-color: var(--accent); }
+
         .btn-refresh {
             display: none; padding: 5px 11px;
             font-family: var(--mono); font-size: 11px; font-weight: 600;
             border: 1px solid var(--border2); border-radius: 5px;
-            background: var(--surface2); color: var(--text-dim); cursor: pointer;
+            background: var(--surface2); color: var(--dim); cursor: pointer;
             transition: color .15s, border-color .15s;
         }
         .btn-refresh:hover { color: var(--accent); border-color: var(--accent); }
         .btn-connect {
-            padding: 6px 14px;
-            font-family: var(--mono); font-size: 11px; font-weight: 700;
-            letter-spacing: 1px;
-            border: 1px solid var(--accent); border-radius: 5px;
+            padding: 6px 14px; font-family: var(--mono); font-size: 11px; font-weight: 700;
+            letter-spacing: 1px; border: 1px solid var(--accent); border-radius: 5px;
             background: rgba(0,180,255,.1); color: var(--accent); cursor: pointer;
-            transition: background .15s, box-shadow .15s;
+            transition: background .15s;
         }
-        .btn-connect:hover { background: rgba(0,180,255,.2); box-shadow: var(--glow); }
+        .btn-connect:hover { background: rgba(0,180,255,.2); }
 
-        /* ─── Live State ── */
+        /* LIVE BOX */
         #live-box { display: none; margin-bottom: 14px; }
         .live-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .live-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 14px;
             display: flex; align-items: center; gap: 12px;
         }
-        .live-card-reset {
-            position: absolute;
-            right: 10px;
-            padding: 4px 8px;
-            font-family: var(--mono); font-size: 9px; font-weight: 700;
-            background: var(--surface2); color: var(--text-muted);
-            border: 1px solid var(--border); border-radius: 5px;
-            cursor: pointer;
-        }
         .live-card-wrap { position: relative; }
+        .live-card-reset {
+            position: absolute; right: 10px;
+            padding: 4px 8px; font-family: var(--mono); font-size: 9px; font-weight: 700;
+            background: var(--surface2); color: var(--muted);
+            border: 1px solid var(--border); border-radius: 5px; cursor: pointer;
+        }
         .live-icon { font-size: 18px; line-height: 1; opacity: .6; }
-        .live-card label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 3px; }
+        .live-card label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 3px; }
         .live-val { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent); }
-        .live-val.fired { color: var(--red); text-shadow: 0 0 12px rgba(255,61,90,.5); }
+        .live-val.fired { color: var(--red); }
 
-        /* ─── Section Label ── */
+        /* SECTION LABEL */
         .section-label {
             font-family: var(--mono); font-size: 9px; font-weight: 700;
-            letter-spacing: 2px; text-transform: uppercase;
-            color: var(--text-muted);
+            letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
             padding: 6px 0; margin-bottom: 8px;
             display: flex; align-items: center; gap: 10px;
         }
         .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
 
-        /* ─── Card ── */
+        /* CARD */
         .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            margin-bottom: 12px;
-            overflow: hidden;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; margin-bottom: 12px; overflow: hidden;
         }
-        .card-header {
-            padding: 10px 14px 9px;
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 8px;
-        }
-        .card-header-title {
-            font-family: var(--mono); font-size: 10px; font-weight: 700;
-            letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim);
-        }
-        .card-header-sub { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-left: auto; }
         .card-body { padding: 14px; }
 
-        /* ─── Calibration ── */
-        .cal-hint { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+        /* CALIBRATION */
+        .cal-hint { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 12px; line-height: 1.6; }
         .cal-btn-row { display: flex; gap: 8px; }
         .cal-item { flex: 1; }
         .btn-cal {
-            width: 100%; padding: 8px;
-            font-family: var(--mono); font-size: 11px; font-weight: 600;
+            width: 100%; padding: 8px; font-family: var(--mono); font-size: 11px; font-weight: 600;
             background: var(--surface2); color: var(--text);
             border: 1px solid var(--border2); border-radius: 6px;
-            cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+            cursor: pointer; transition: border-color .15s, color .15s;
         }
         .btn-cal:hover { border-color: var(--accent2); color: var(--accent); }
         .btn-cal:disabled { opacity: .4; cursor: not-allowed; }
         .cal-result { font-family: var(--mono); font-size: 10px; color: var(--green); text-align: center; margin-top: 5px; min-height: 16px; }
 
-        /* ─── Field ── */
+        /* FIELDS */
         .field { display: flex; flex-direction: column; gap: 4px; }
-        .field label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: .5px; }
+        .field label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .5px; }
 
-        input[type=number], select {
+        input[type=number], input[type=text], select {
             background: var(--bg2); color: var(--text);
-            border: 1px solid var(--border2);
-            border-radius: 6px;
-            padding: 7px 10px;
-            font-family: var(--mono); font-size: 12px; font-weight: 500;
-            width: 100%;
-            -moz-appearance: textfield;
+            border: 1px solid var(--border2); border-radius: 6px;
+            padding: 7px 10px; font-family: var(--mono); font-size: 12px; font-weight: 500;
+            width: 100%; -moz-appearance: textfield;
             transition: border-color .15s;
         }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        input[type=number]:focus, select:focus { outline: none; border-color: var(--accent); }
+        input[type=number]:focus, input[type=text]:focus, select:focus { outline: none; border-color: var(--accent); }
         select {
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235e7a99'/%3E%3C/svg%3E");
             background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
         }
 
-        /* ─── Fire Mode ── */
         .fire-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* ─── Trigger thresholds ── */
         .trig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 
-        /* ─── Tabs ── */
-        .tab-bar {
-            display: flex; gap: 3px;
-            padding: 12px 14px 0;
-        }
+        /* TABS / PROFILES */
+        .tab-bar { display: flex; gap: 3px; padding: 12px 14px 0; }
         .tab-btn {
-            flex: 1; padding: 7px 4px;
-            font-family: var(--mono); font-size: 11px; font-weight: 600;
-            letter-spacing: .5px;
-            border: 1px solid var(--border2); border-bottom: none;
-            border-radius: 6px 6px 0 0;
-            background: var(--bg2); color: var(--text-muted);
+            flex: 1; padding: 7px 4px; font-family: var(--mono); font-size: 11px; font-weight: 600;
+            letter-spacing: .5px; border: 1px solid var(--border2); border-bottom: none;
+            border-radius: 6px 6px 0 0; background: var(--bg2); color: var(--muted);
             cursor: pointer; transition: color .15s, background .15s;
         }
         .tab-btn:hover { color: var(--text); background: var(--surface2); }
-        .tab-btn.active { background: var(--surface2); color: var(--accent); border-color: var(--border2); }
+        .tab-btn.active { background: var(--surface2); color: var(--accent); }
 
         .profile-panel { display: none; }
         .profile-panel.active { display: block; }
+        .panel-inner { padding: 14px; border-top: 1px solid var(--border2); background: var(--surface2); border-radius: 0 0 10px 10px; }
 
-        /* ─── Profile panels layout ── */
-        .panel-inner {
-            padding: 14px;
-            border-top: 1px solid var(--border2);
-            background: var(--surface2);
-            border-radius: 0 0 10px 10px;
-        }
-
+        /* OVERVIEW STRIP */
         .overview-strip {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 14px;
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
             display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;
         }
-        .ov-item { }
-        .ov-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+        .ov-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
         .ov-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--yellow); }
         .ov-val.mode-semi  { color: var(--green); }
         .ov-val.mode-full  { color: var(--red); }
         .ov-val.mode-burst { color: var(--orange); }
 
+        /* SOLENOID BLOCKS */
         .sol-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .sol-block {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .sol-block-header {
-            padding: 7px 12px;
-            display: flex; align-items: center; gap: 7px;
-            border-bottom: 1px solid var(--border);
-        }
+        .sol-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .sol-block-header { padding: 7px 12px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--border); }
         .sol-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .sol-dot.s1 { background: #ff3d5a; box-shadow: 0 0 6px #ff3d5a66; }
-        .sol-dot.s2 { background: #00e676; box-shadow: 0 0 6px #00e67666; }
-        .sol-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); }
+        .sol-dot.s1 { background: #ff3d5a; }
+        .sol-dot.s2 { background: #00e676; }
+        .sol-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--dim); }
         .sol-block-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 
-        .rnd-block {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        .rnd-block-header {
-            padding: 7px 12px;
-            display: flex; align-items: center; gap: 7px;
-            border-bottom: 1px solid var(--border);
-        }
-        .rnd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 6px #ffa72666; }
-        .rnd-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); }
+        /* ROUNDS BLOCK */
+        .rnd-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 10px; }
+        .rnd-block-header { padding: 7px 12px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--border); }
+        .rnd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); }
+        .rnd-block-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--dim); }
         .rnd-block-body { padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
-        /* ─── Others card ── */
-        .others-switches {
-            border-bottom: 1px solid var(--border);
+        /* OTHERS — grouped layout */
+        .others-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        .others-group { padding: 14px; }
+        .others-group + .others-group { border-left: 1px solid var(--border); }
+        .others-group-title {
+            font-family: var(--mono); font-size: 9px; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+            margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
         }
-        .switch-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border);
-        }
-        .switch-row:last-child { border-bottom: none; }
-        .switch-label {
-            font-family: var(--mono); font-size: 11px; font-weight: 700;
-            color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
-        }
+        .others-group-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+        /* Switch rows inside solenoid group */
+        .switch-rows { display: flex; flex-direction: column; gap: 10px; }
+        .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .switch-label { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+
         .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); border: 1px solid var(--border2); transition: .3s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: var(--text-muted); transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background: rgba(0, 230, 118, 0.15); border-color: var(--green); }
-        input:checked + .slider:before { transform: translateX(16px); background: var(--green); box-shadow: var(--glow-green); }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: var(--bg); border: 1px solid var(--border2); transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: var(--muted); transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background: rgba(0,230,118,0.15); border-color: var(--green); }
+        input:checked + .slider:before { transform: translateX(16px); background: var(--green); }
 
-        .others-timings {
-            padding: 14px;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-        }
+        /* BLE group inputs */
+        .ble-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* ─── Save Bar ── */
-        .save-bar {
-            display: none;
-            position: fixed; bottom: 0; left: 0; right: 0;
-            padding: 12px 16px;
-            background: var(--bg);
-            border-top: 1px solid var(--border);
-            z-index: 99;
-        }
+        /* SAVE BAR */
+        .save-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: var(--bg); border-top: 1px solid var(--border); z-index: 99; }
         .save-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
-        .save-hint { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
-        .badge-unsaved {
-            background: var(--orange); color: #000;
-            font-family: var(--mono); font-size: 10px; font-weight: 700;
-            padding: 2px 8px; border-radius: 4px; letter-spacing: 1px;
-        }
-        .btn-save {
-            flex: 1; padding: 11px;
-            font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
-            background: var(--green); color: #000;
-            border: none; border-radius: 7px; cursor: pointer;
-            transition: opacity .15s;
-        }
+        .save-hint { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+        .badge-unsaved { background: var(--orange); color: #000; font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; letter-spacing: 1px; }
+        .btn-save { flex: 1; padding: 11px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; background: var(--green); color: #000; border: none; border-radius: 7px; cursor: pointer; transition: opacity .15s; }
         .btn-save:disabled { opacity: .4; cursor: not-allowed; }
 
         #config-form { display: none; }
@@ -361,19 +263,19 @@
             <h1>PAPYPER FCU</h1>
             <p>HPA FIRE CONTROL UNIT · BLE CONFIG</p>
         </div>
-        <div class="header-spacer"></div>
         <div class="fw-tag">v1.0</div>
     </header>
 
-    <!-- Status -->
     <div class="status-bar">
         <div class="status-dot" id="status-dot"></div>
         <span id="status-msg">Not Connected</span>
+        <select id="fcu_saved" class="auth-input" style="display:none; width:auto; padding-right:20px;" onchange="loadSavedFCU()"></select>
+        <input type="text" id="fcu_id" class="auth-input" placeholder="ID" value="3p100">
+        <input type="text" id="fcu_pwd" class="auth-input" placeholder="PWD" value="123456">
         <button class="btn-refresh" id="refreshBtn" onclick="readConfigs()">↺ Refresh</button>
         <button class="btn-connect" id="connectBtn" onclick="connectBLE()">CONNECT</button>
     </div>
 
-    <!-- Live State -->
     <div id="live-box">
         <div class="live-row">
             <div class="live-card">
@@ -403,7 +305,6 @@
 
     <div id="config-form">
 
-        <!-- Selector Calibration -->
         <div class="section-label">Selector Calibration</div>
         <div class="card">
             <div class="card-body">
@@ -425,7 +326,6 @@
             </div>
         </div>
 
-        <!-- Trigger Calibration -->
         <div class="section-label">Trigger Calibration</div>
         <div class="card">
             <div class="card-body">
@@ -453,7 +353,6 @@
             </div>
         </div>
 
-        <!-- Fire Mode -->
         <div class="section-label">Fire Mode Assignment</div>
         <div class="card">
             <div class="card-body">
@@ -464,38 +363,50 @@
             </div>
         </div>
 
-        <!-- Profiles -->
         <div class="section-label">Profiles</div>
-        <div class="card" style="padding-bottom: 0">
+        <div class="card" style="padding-bottom:0">
             <div class="tab-bar" id="tabBar"></div>
             <div id="profiles-container"></div>
         </div>
 
-        <!-- Others -->
         <div class="section-label">Others</div>
         <div class="card">
-            <div class="others-switches">
-                <div class="switch-row">
-                    <span class="switch-label">Solenoid 1 Peak &amp; Hold</span>
-                    <label class="switch"><input type="checkbox" id="en_pnh1" checked><span class="slider"></span></label>
+            <div class="others-groups">
+                <!-- GROUP: Solenoid -->
+                <div class="others-group">
+                    <div class="others-group-title">Solenoid</div>
+                    <div class="switch-rows">
+                        <div class="switch-row">
+                            <span class="switch-label">Sol 1 Peak &amp; Hold</span>
+                            <label class="switch"><input type="checkbox" id="en_pnh1" checked><span class="slider"></span></label>
+                        </div>
+                        <div class="switch-row">
+                            <span class="switch-label">Sol 2 Peak &amp; Hold</span>
+                            <label class="switch"><input type="checkbox" id="en_pnh2" checked><span class="slider"></span></label>
+                        </div>
+                    </div>
                 </div>
-                <div class="switch-row">
-                    <span class="switch-label">Solenoid 2 Peak &amp; Hold</span>
-                    <label class="switch"><input type="checkbox" id="en_pnh2" checked><span class="slider"></span></label>
-                </div>
-            </div>
-            <div class="others-timings">
-                <div class="field">
-                    <label>BLE Hold Time (s)</label>
-                    <input type="number" id="cfg_hold" placeholder="3.0" step="0.1" min="0">
-                </div>
-                <div class="field">
-                    <label>Sleep Timeout (s)</label>
-                    <input type="number" id="slp_tout" placeholder="120" step="1" min="0">
-                </div>
-                <div class="field">
-                    <label>Wake Poll Interval (s)</label>
-                    <input type="number" id="wake_poll" placeholder="0.4" step="0.01" min="0">
+                <!-- GROUP: BLE -->
+                <div class="others-group">
+                    <div class="others-group-title">BLE</div>
+                    <div class="ble-inputs">
+                        <div class="field">
+                            <label>Hold Time (s)</label>
+                            <input type="number" id="cfg_hold" placeholder="3.0" step="0.1" min="0">
+                        </div>
+                        <div class="field">
+                            <label>Password</label>
+                            <input type="text" id="cfg_pwd" placeholder="123456" maxlength="16">
+                        </div>
+                        <div class="field">
+                            <label>Sleep Timeout (s)</label>
+                            <input type="number" id="slp_tout" placeholder="120" step="1" min="0">
+                        </div>
+                        <div class="field">
+                            <label>Wake Poll (s)</label>
+                            <input type="number" id="wake_poll" placeholder="0.4" step="0.01" min="0">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -503,7 +414,6 @@
     </div>
 </div>
 
-<!-- Save Bar -->
 <div class="save-bar" id="save-bar">
     <div class="save-inner">
         <span class="save-hint" id="save-hint"></span>
@@ -512,10 +422,9 @@
 </div>
 
 <script>
-// ─── Constants ────────────────────────────────────────────────────────────────
-const SERVICE_UUID  = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-const CONFIG_CHAR   = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-const STATE_CHAR    = "1c9441a1-f3b1-4f16-8eb5-7c37a6b72a6b";
+const BASE_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const BASE_CONFIG_CHAR  = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+const BASE_STATE_CHAR   = "1c9441a1-f3b1-4f16-8eb5-7c37a6b72a6b";
 const PROFILE_COUNT = 5;
 
 const SOL1_FIELDS = [
@@ -539,21 +448,25 @@ const ALL_FIELDS = [...SOL1_FIELDS, ...SOL2_FIELDS, ...ROUND_FIELDS];
 
 const $ = id => document.getElementById(id);
 
-// ─── Unit conversion helpers ──────────────────────────────────────────────────
-// cfg_hold: stored as µs → display as s
+function makeUUID(baseStr, id, pwd) {
+    let str = id + pwd;
+    let bytes = baseStr.replace(/-/g, '').match(/.{2}/g).map(b => parseInt(b, 16));
+    for (let i = 0; i < str.length; i++) {
+        let c = str.charCodeAt(i);
+        bytes[i % 16] = (bytes[i % 16] ^ c) & 0xFF;
+        bytes[(i + 1) % 16] = (bytes[(i + 1) % 16] + c) & 0xFF;
+    }
+    let hex = bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.substr(0,8)}-${hex.substr(8,4)}-${hex.substr(12,4)}-${hex.substr(16,4)}-${hex.substr(20,12)}`;
+}
+
 function usToS(us)  { return us  ? (Number(us)  / 1e6).toString() : ""; }
 function sToUs(s)   { return s   ? Math.round(Number(s) * 1e6).toString() : ""; }
-
-// slp_tout: stored as ms → display as s
 function msToS(ms)  { return ms  ? (Number(ms)  / 1e3).toString() : ""; }
 function sToMs(s)   { return s   ? Math.round(Number(s) * 1e3).toString() : ""; }
-
-// wake_poll: stored as µs → display as s
-// same as cfg_hold
 const wakeUsToS = usToS;
 const wakeSToUs = sToUs;
 
-// ─── Status ───────────────────────────────────────────────────────────────────
 function setStatus(msg, state = "") {
     $("status-msg").textContent = msg;
     $("status-dot").className = "status-dot" + (state ? ` ${state}` : "");
@@ -568,11 +481,9 @@ function setLiveState(sel, trig, count, rawHall, rawTrigHall) {
     $("trig-label").textContent = rawTrigHall !== undefined ? `TRIGGER (${rawTrigHall})` : "TRIGGER";
 }
 
-// ─── Field helpers ────────────────────────────────────────────────────────────
 function fid(pi, key) { return `p${pi}_${key}`; }
 function fel(pi, key) { return $(fid(pi, key)); }
 
-// ─── Build UI ─────────────────────────────────────────────────────────────────
 function buildUI() {
     const opts = Array.from({ length: PROFILE_COUNT }, (_, i) =>
         `<option value="${i}">Profile ${i + 1}</option>`).join("");
@@ -586,7 +497,6 @@ function buildUI() {
     $("profiles-container").innerHTML = Array.from({ length: PROFILE_COUNT }, (_, i) =>
         `<div id="panel${i}" class="profile-panel${i === 0 ? " active" : ""}">
             <div class="panel-inner">
-
                 <div class="overview-strip" id="overview_${i}">
                     <div class="ov-item">
                         <div class="ov-label">Ms / Shot</div>
@@ -605,7 +515,6 @@ function buildUI() {
                         <div class="ov-val" id="ov_btrig_${i}">—</div>
                     </div>
                 </div>
-
                 <div class="sol-row">
                     <div class="sol-block">
                         <div class="sol-block-header">
@@ -634,7 +543,6 @@ function buildUI() {
                         </div>
                     </div>
                 </div>
-
                 <div class="rnd-block">
                     <div class="rnd-block-header">
                         <div class="rnd-dot"></div>
@@ -646,7 +554,6 @@ function buildUI() {
                         ).join("")}
                     </div>
                 </div>
-
             </div>
         </div>`
     ).join("");
@@ -657,7 +564,6 @@ function switchTab(i) {
     document.querySelectorAll(".profile-panel").forEach((p, j) => p.classList.toggle("active", j === i));
 }
 
-// ─── Overview updater ─────────────────────────────────────────────────────────
 function updateOverview() {
     for (let i = 0; i < PROFILE_COUNT; i++) {
         const s1 = parseInt(fel(i, "s1").value) || 0;
@@ -682,14 +588,11 @@ function updateOverview() {
         if (isNaN(rpt) || fel(i, "rpt").value === "") {
             modeEl.textContent = "—";
         } else if (rpt === 1) {
-            modeEl.textContent = "SEMI";
-            modeEl.classList.add("mode-semi");
+            modeEl.textContent = "SEMI"; modeEl.classList.add("mode-semi");
         } else if (rpt === -1) {
-            modeEl.textContent = "FULL AUTO";
-            modeEl.classList.add("mode-full");
+            modeEl.textContent = "FULL AUTO"; modeEl.classList.add("mode-full");
         } else {
-            modeEl.textContent = `BURST ×${rpt}`;
-            modeEl.classList.add("mode-burst");
+            modeEl.textContent = `BURST ×${rpt}`; modeEl.classList.add("mode-burst");
         }
 
         const rptr = parseInt(fel(i, "rptr").value);
@@ -697,36 +600,27 @@ function updateOverview() {
         btrigEl.className = "ov-val";
         btrigEl.style.color = "";
         if (!isNaN(rptr) && rptr > 0) {
-            btrigEl.textContent = "ENABLED";
-            btrigEl.classList.add("mode-semi");
+            btrigEl.textContent = "ENABLED"; btrigEl.classList.add("mode-semi");
         } else {
-            btrigEl.textContent = "DISABLED";
-            btrigEl.style.color = "var(--text-muted)";
+            btrigEl.textContent = "DISABLED"; btrigEl.style.color = "var(--muted)";
         }
     }
 }
 
-// ─── BLE State ────────────────────────────────────────────────────────────────
 let configChar, stateChar;
-
-// ─── Change Tracking ──────────────────────────────────────────────────────────
 let savedSnapshot = null;
 
-// Snapshot stores display values (seconds). Conversion happens only on save/load.
 function takeSnapshot() {
     return [
-        $("slot0").value,
-        $("slot1").value,
+        $("slot0").value, $("slot1").value,
         ...Array.from({ length: PROFILE_COUNT }, (_, i) =>
             ALL_FIELDS.map(({ key }) => fel(i, key).value)
         ).flat(),
-        $("trig_fire_pct").value,
-        $("trig_rel_pct").value,
+        $("trig_fire_pct").value, $("trig_rel_pct").value,
         $("en_pnh1").checked ? 1 : 0,
         $("en_pnh2").checked ? 1 : 0,
-        $("cfg_hold").value,
-        $("slp_tout").value,
-        $("wake_poll").value
+        $("cfg_hold").value, $("slp_tout").value,
+        $("wake_poll").value, $("cfg_pwd").value
     ].join(",");
 }
 
@@ -741,18 +635,15 @@ function togglePnH() {
     const en1 = $("en_pnh1").checked;
     const en2 = $("en_pnh2").checked;
     for (let i = 0; i < PROFILE_COUNT; i++) {
-        const w_p1 = $("wrap_" + fid(i, "p1")); if(w_p1) w_p1.style.display = en1 ? "flex" : "none";
-        const w_h1 = $("wrap_" + fid(i, "h1")); if(w_h1) w_h1.style.display = en1 ? "flex" : "none";
-        const w_p2 = $("wrap_" + fid(i, "p2")); if(w_p2) w_p2.style.display = en2 ? "flex" : "none";
-        const w_h2 = $("wrap_" + fid(i, "h2")); if(w_h2) w_h2.style.display = en2 ? "flex" : "none";
+        ["p1","h1"].forEach(k => { const w = $("wrap_"+fid(i,k)); if(w) w.style.display = en1 ? "flex" : "none"; });
+        ["p2","h2"].forEach(k => { const w = $("wrap_"+fid(i,k)); if(w) w.style.display = en2 ? "flex" : "none"; });
     }
 }
 
 function attachChangeListeners() {
-    [
-        "slot0", "slot1", "trig_fire_pct", "trig_rel_pct",
-        "cfg_hold", "slp_tout", "wake_poll"
-    ].forEach(id => $(id).addEventListener("change", checkDirty));
+    ["slot0","slot1","trig_fire_pct","trig_rel_pct","cfg_hold","slp_tout","wake_poll"].forEach(id =>
+        $(id).addEventListener("change", checkDirty)
+    );
     $("en_pnh1").addEventListener("change", () => { togglePnH(); checkDirty(); });
     $("en_pnh2").addEventListener("change", () => { togglePnH(); checkDirty(); });
     for (let i = 0; i < PROFILE_COUNT; i++) {
@@ -760,13 +651,53 @@ function attachChangeListeners() {
             fel(i, key).addEventListener("input", checkDirty);
         }
     }
-    // Also trigger checkDirty on input (not just change) for timing fields
-    ["cfg_hold", "slp_tout", "wake_poll"].forEach(id =>
+    ["cfg_hold","slp_tout","wake_poll","cfg_pwd"].forEach(id =>
         $(id).addEventListener("input", checkDirty)
     );
 }
 
-// ─── BLE Read / Write ─────────────────────────────────────────────────────────
+function initAuth() {
+    renderFCUHistory();
+    const lastId  = localStorage.getItem('last_fcu_id');
+    const lastPwd = localStorage.getItem('last_fcu_pwd');
+    if (lastId)  $('fcu_id').value  = lastId;
+    if (lastPwd) $('fcu_pwd').value = lastPwd;
+}
+
+function renderFCUHistory() {
+    const history = JSON.parse(localStorage.getItem('fcu_history')) || [];
+    const sel = $('fcu_saved');
+    if (!sel) return;
+    if (history.length > 0) {
+        sel.style.display = 'inline-block';
+        sel.innerHTML = `<option value="">★ Saved</option>` +
+            history.map((h, i) => `<option value="${i}">${h.id}</option>`).join('');
+    } else {
+        sel.style.display = 'none';
+    }
+}
+
+function loadSavedFCU() {
+    const sel = $('fcu_saved');
+    const history = JSON.parse(localStorage.getItem('fcu_history')) || [];
+    if (sel.value !== "" && history[sel.value]) {
+        $('fcu_id').value  = history[sel.value].id;
+        $('fcu_pwd').value = history[sel.value].pwd;
+    }
+    sel.value = "";
+}
+
+function saveFCUToHistory(id, pwd) {
+    let history = JSON.parse(localStorage.getItem('fcu_history')) || [];
+    history = history.filter(h => h.id !== id);
+    history.unshift({ id, pwd });
+    if (history.length > 10) history = history.slice(0, 10);
+    localStorage.setItem('fcu_history', JSON.stringify(history));
+    localStorage.setItem('last_fcu_id', id);
+    localStorage.setItem('last_fcu_pwd', pwd);
+    renderFCUHistory();
+}
+
 async function readConfigs() {
     setStatus("Reading configs…", "connecting");
     const raw  = await configChar.readValue();
@@ -795,10 +726,10 @@ async function readConfigs() {
         $("en_pnh1").checked = (vals.length > idx+7) ? (vals[idx+7] === "1") : true;
         $("en_pnh2").checked = (vals.length > idx+8) ? (vals[idx+8] === "1") : true;
 
-        // Convert raw stored units → seconds for display
         if (vals.length > idx+9)  $("cfg_hold").value = usToS(vals[idx+9]);
         if (vals.length > idx+10) $("slp_tout").value = msToS(vals[idx+10]);
         if (vals.length > idx+11) $("wake_poll").value = wakeUsToS(vals[idx+11]);
+        if (vals.length > idx+12) $("cfg_pwd").value = vals[idx+12];
 
         togglePnH();
     }
@@ -806,33 +737,31 @@ async function readConfigs() {
     updateOverview();
     savedSnapshot = takeSnapshot();
     $("save-hint").innerHTML = "";
-    setStatus("Connected & Ready", "connected");
+    
+    const id  = $("fcu_id").value  || "3p100";
+    setStatus("Connected & Ready (FCU #"+id+")", "connected");
 }
 
 async function saveConfigs() {
     const btn = $("saveBtn");
-    btn.textContent = "SAVING…";
-    btn.disabled = true;
+    btn.textContent = "SAVING…"; btn.disabled = true;
     try {
-        // Build snapshot from display values (seconds), then convert timing fields back
-        const base = [
-            $("slot0").value,
-            $("slot1").value,
+        const csv = [
+            $("slot0").value, $("slot1").value,
             ...Array.from({ length: PROFILE_COUNT }, (_, i) =>
                 ALL_FIELDS.map(({ key }) => fel(i, key).value)
             ).flat(),
-            $("trig_fire_pct").value,
-            $("trig_rel_pct").value,
+            $("trig_fire_pct").value, $("trig_rel_pct").value,
             $("en_pnh1").checked ? 1 : 0,
             $("en_pnh2").checked ? 1 : 0,
-            // Convert seconds → raw stored units
             sToUs($("cfg_hold").value),
             sToMs($("slp_tout").value),
-            wakeSToUs($("wake_poll").value)
-        ];
-        const csv = base.join(",");
+            wakeSToUs($("wake_poll").value),
+            $("cfg_pwd").value
+        ].join(",");
+
         await configChar.writeValueWithResponse(new TextEncoder().encode(csv));
-        savedSnapshot = takeSnapshot(); // snapshot stays in seconds
+        savedSnapshot = takeSnapshot();
         $("save-hint").innerHTML = "";
         btn.textContent = "✓ SAVED!";
     } catch (err) {
@@ -843,13 +772,15 @@ async function saveConfigs() {
     }
 }
 
-// ─── BLE Connect ──────────────────────────────────────────────────────────────
 function onDisconnect() {
     setStatus("Disconnected!", "");
     $("live-box").style.display    = "none";
     $("config-form").style.display = "none";
     $("save-bar").style.display    = "none";
     $("refreshBtn").style.display  = "none";
+    renderFCUHistory();
+    $("fcu_id").style.display      = "inline-block";
+    $("fcu_pwd").style.display     = "inline-block";
     $("connectBtn").style.display  = "block";
 }
 
@@ -880,18 +811,24 @@ function onStateChanged(event) {
 
 async function connectBLE() {
     try {
+        const id  = $("fcu_id").value  || "3p100";
+        const pwd = $("fcu_pwd").value || "123456";
+        const srvUUID = makeUUID(BASE_SERVICE_UUID, id, pwd);
+        const cfgUUID = makeUUID(BASE_CONFIG_CHAR, id, pwd);
+        const sttUUID = makeUUID(BASE_STATE_CHAR, id, pwd);
+
         setStatus("Requesting Bluetooth device…", "connecting");
         const device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: "PaPyPer_FCU" }],
-            optionalServices: [SERVICE_UUID]
+            filters: [{ name: "PaPyPer_FCU_" + id }],
+            optionalServices: [srvUUID]
         });
         device.addEventListener("gattserverdisconnected", onDisconnect);
 
         setStatus("Connecting…", "connecting");
         const server  = await device.gatt.connect();
-        const service = await server.getPrimaryService(SERVICE_UUID);
-        configChar    = await service.getCharacteristic(CONFIG_CHAR);
-        stateChar     = await service.getCharacteristic(STATE_CHAR);
+        const service = await server.getPrimaryService(srvUUID);
+        configChar    = await service.getCharacteristic(cfgUUID);
+        stateChar     = await service.getCharacteristic(sttUUID);
 
         await readConfigs();
 
@@ -903,11 +840,16 @@ async function connectBLE() {
         await stateChar.startNotifications();
         stateChar.addEventListener("characteristicvaluechanged", onStateChanged);
 
-        setStatus("Connected & Ready", "connected");
+        setStatus("Connected & Ready (FCU #"+id+")", "connected");
+        saveFCUToHistory(id, pwd);
+
         $("live-box").style.display    = "block";
         $("config-form").style.display = "block";
         $("save-bar").style.display    = "block";
         $("refreshBtn").style.display  = "block";
+        $("fcu_saved").style.display   = "none";
+        $("fcu_id").style.display      = "none";
+        $("fcu_pwd").style.display     = "none";
         $("connectBtn").style.display  = "none";
     } catch (err) {
         console.error(err);
@@ -915,7 +857,6 @@ async function connectBLE() {
     }
 }
 
-// ─── Calibrate ────────────────────────────────────────────────────────────────
 async function sendCalibrate(stateIndex) {
     if (!configChar) return alert("Connect BLE first!");
     const btn = $(`calBtn${stateIndex}`);
@@ -943,13 +884,11 @@ async function resetCount() {
     try {
         await configChar.writeValueWithResponse(new TextEncoder().encode("RST_CNT"));
         $("count-state").textContent = "0";
-    } catch(e) {
-        console.error(e);
-    }
+    } catch(e) { console.error(e); }
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
 buildUI();
+initAuth();
 attachChangeListeners();
 </script>
 </body>
